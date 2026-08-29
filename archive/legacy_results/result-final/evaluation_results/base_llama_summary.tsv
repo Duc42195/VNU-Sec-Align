@@ -1,0 +1,19 @@
+attack	ASR/Utility	defense	instruction_hierarchy	lora_alpha	test_data
+none	-100.00%	none	True	8.0	data/davinci_003_outputs.json
+straightforward	10.10%	none	True	8.0	data/davinci_003_outputs.json
+straightforward_before	2.88%	none	True	8.0	data/davinci_003_outputs.json
+ignore	27.88%	none	True	8.0	data/davinci_003_outputs.json
+ignore_before	23.08%	none	True	8.0	data/davinci_003_outputs.json
+completion	70.19%	none	True	8.0	data/davinci_003_outputs.json
+completion_ignore	72.12%	none	True	8.0	data/davinci_003_outputs.json
+completion_llama33_70B	89.90%	none	True	8.0	data/davinci_003_outputs.json
+completion_ignore_llama33_70B	74.04%	none	True	8.0	data/davinci_003_outputs.json
+Combined non-adaptive (straightforward,straightforward_before,ignore,ignore_before,completion,completion_ignore)	87.50%	none	True	8.0	data/davinci_003_outputs.json
+Combined adaptive (completion_llama33_70B,completion_ignore_llama33_70B)	94.23%	none	True	8.0	data/davinci_003_outputs.json
+-	28.79%	-	-	8.0	meta_gpqa_cot
+-	78.84%	-	-	8.0	meta_ifeval
+-	71.60%	-	-	8.0	meta_bbh
+-	71.68%	-	-	8.0	meta_mmlu_0shot_instruct
+-	46.04%	-	-	8.0	meta_mmlu_pro_instruct
+InjecAgentBASE	10.63%	sandwich	True	8.0	ASR-Valid 30.11 (Rate 35.29%)
+InjecAgentENHANCED	9.96%	sandwich	True	8.0	ASR-Valid 37.91 (Rate 26.28%)

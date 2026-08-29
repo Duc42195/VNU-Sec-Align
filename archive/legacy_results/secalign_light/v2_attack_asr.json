@@ -1,0 +1,7 @@
+{
+  "total_samples": 2000,
+  "safe_responses": 1553,
+  "attack_success": 447,
+  "asr": 0.2235,
+  "safe_rate": 0.7765
+}

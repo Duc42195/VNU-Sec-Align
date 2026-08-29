@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Pipeline-Comparison" id="pipeline">
+    <mxGraphModel dx="2400" dy="1100" grid="1" gridSize="10" guides="1">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- ORIGINAL SECALIGN - LEFT SIDE -->
+        <mxCell id="orig-data" parent="1" 
+          style="rounded=12;whiteSpace=wrap;html=1;fillColor=#e8e8e8;strokeColor=#666;strokeWidth=2;fontSize=12;fontFamily=Segoe UI;" 
+          value="Data: Cleaned-Alpaca&#xa;19,157 EN samples" 
+          vertex="1">
+          <mxGeometry height="70" width="180" x="80" y="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="orig-train-box" parent="1" 
+          style="rounded=12;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#999;strokeWidth=1;" 
+          value="" vertex="1">
+          <mxGeometry height="280" width="220" x="70" y="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="orig-dpo" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#d79b00;strokeWidth=2;fontSize=11;fontFamily=Segoe UI;" 
+          value="DPO loss only" vertex="1">
+          <mxGeometry height="50" width="150" x="95" y="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="orig-lora" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#d79b00;strokeWidth=2;fontSize=11;fontFamily=Segoe UI;" 
+          value="LoRA: r=64, α=8&#xa;q_proj, v_proj, gate_proj&#xa;down_proj, up_proj" vertex="1">
+          <mxGeometry height="70" width="150" x="95" y="230" as="geometry" />
+        </mxCell>
+
+        <mxCell id="orig-inject" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;strokeWidth=1;fontSize=11;fontFamily=Segoe UI;" 
+          value="Randomized injection&#xa;45% start, 45% end&#xa;10% completion" vertex="1">
+          <mxGeometry height="60" width="150" x="95" y="320" as="geometry" />
+        </mxCell>
+
+        <mxCell id="orig-eval-box" parent="1" 
+          style="rounded=12;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#999;strokeWidth=1;" 
+          value="" vertex="1">
+          <mxGeometry height="130" width="220" x="70" y="450" as="geometry" />
+        </mxCell>
+
+        <mxCell id="orig-security" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#ffcdd2;strokeColor=#c62828;strokeWidth=2;fontSize=11;fontFamily=Segoe UI;" 
+          value="Security Metrics:&#xa;AlpacaFarm, CyberSecEval 2&#xa;InjecAgent" vertex="1">
+          <mxGeometry height="55" width="150" x="95" y="465" as="geometry" />
+        </mxCell>
+
+        <mxCell id="orig-utility" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;strokeWidth=2;fontSize=11;fontFamily=Segoe UI;" 
+          value="Utility:&#xa;MMLU, MMLU-Pro&#xa;IFEval, BBH, GPQA" vertex="1">
+          <mxGeometry height="55" width="150" x="95" y="530" as="geometry" />
+        </mxCell>
+
+        <!-- FINETUNED BILINGUAL - RIGHT SIDE -->
+        <mxCell id="our-data-sources" parent="1" 
+          style="rounded=12;whiteSpace=wrap;html=1;fillColor=#e8e8e8;strokeColor=#666;strokeWidth=2;fontSize=11;fontFamily=Segoe UI;" 
+          value="5 Sources:&#xa;PKU 10,813 EN&#xa;ViHOS 8,844 VI&#xa;ViHSD 4,162 VI&#xa;Hallucination 1,000 VI&#xa;Novel Attack 2,000 EN" vertex="1">
+          <mxGeometry height="110" width="200" x="500" y="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="our-data" parent="1" 
+          style="rounded=12;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;strokeWidth=2;fontSize=12;fontFamily=Segoe UI;fontStyle=bold;" 
+          value="Data - C1 Bilingual&#xa;26,819 samples&#xa;52.2% VI / 47.8% EN" vertex="1">
+          <mxGeometry height="70" width="200" x="500" y="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="our-train-box" parent="1" 
+          style="rounded=12;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#999;strokeWidth=1;" 
+          value="" vertex="1">
+          <mxGeometry height="280" width="220" x="490" y="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="our-dpo" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#d79b00;strokeWidth=2;fontSize=11;fontFamily=Segoe UI;" 
+          value="DPO + RPO (α=0.5)&#xa;+ cDPO (ε=0.1)" vertex="1">
+          <mxGeometry height="50" width="150" x="515" y="300" as="geometry" />
+        </mxCell>
+
+        <mxCell id="our-lora" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#d79b00;strokeWidth=2;fontSize=11;fontFamily=Segoe UI;" 
+          value="LoRA: r=16, α=32&#xa;q_proj, v_proj&#xa;0.5% params" vertex="1">
+          <mxGeometry height="60" width="150" x="515" y="370" as="geometry" />
+        </mxCell>
+
+        <mxCell id="our-inject" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;strokeWidth=1;fontSize=11;fontFamily=Segoe UI;" 
+          value="Randomized injection&#xa;+ Novel attack vectors&#xa;(10 types)" vertex="1">
+          <mxGeometry height="60" width="150" x="515" y="450" as="geometry" />
+        </mxCell>
+
+        <mxCell id="our-eval-box" parent="1" 
+          style="rounded=12;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#999;strokeWidth=1;" 
+          value="" vertex="1">
+          <mxGeometry height="150" width="220" x="490" y="600" as="geometry" />
+        </mxCell>
+
+        <mxCell id="our-security" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#ffcdd2;strokeColor=#c62828;strokeWidth=2;fontSize=11;fontFamily=Segoe UI;" 
+          value="Security (Enhanced):&#xa;10-Axis Custom Attack&#xa;Cross-lingual EN/VI&#xa;Adaptive attacks" vertex="1">
+          <mxGeometry height="65" width="150" x="515" y="615" as="geometry" />
+        </mxCell>
+
+        <mxCell id="our-utility" parent="1" 
+          style="rounded=8;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;strokeWidth=2;fontSize=11;fontFamily=Segoe UI;" 
+          value="Utility:&#xa;MMLU, GSM8K&#xa;FRR, Comparison" vertex="1">
+          <mxGeometry height="55" width="150" x="515" y="700" as="geometry" />
+        </mxCell>
+
+        <!-- EDGES -->
+        <mxCell id="edge-orig-1" edge="1" parent="1" source="orig-data" target="orig-train-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-orig-2" edge="1" parent="1" source="orig-train-box" target="orig-eval-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-our-1" edge="1" parent="1" source="our-data-sources" target="our-data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-our-2" edge="1" parent="1" source="our-data" target="our-train-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-our-3" edge="1" parent="1" source="our-train-box" target="our-eval-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- LABELS -->
+        <mxCell id="label-orig" parent="1" 
+          style="text;html=1;fontSize=14;fontFamily=Segoe UI;fontStyle=bold;strokeColor=none;fillColor=none;" 
+          value="Original SecAlign++" vertex="1">
+          <mxGeometry height="30" width="180" x="80" y="10" as="geometry" />
+        </mxCell>
+
+        <mxCell id="label-our" parent="1" 
+          style="text;html=1;fontSize=14;fontFamily=Segoe UI;fontStyle=bold;strokeColor=none;fillColor=none;" 
+          value="This Study (Bilingual)" vertex="1">
+          <mxGeometry height="30" width="200" x="490" y="10" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

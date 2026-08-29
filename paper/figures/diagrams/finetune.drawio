@@ -1,0 +1,62 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Trang-1" id="faqBbgzGoVDm_qv1mWtg">
+    <mxGraphModel dx="1647" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-12" parent="1" style="whiteSpace=wrap;html=1;fillColor=#bac8d3;strokeColor=#23445d;" value="" vertex="1">
+          <mxGeometry height="310" width="200" x="280" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#bac8d3;strokeColor=#23445d;" value="" vertex="1">
+          <mxGeometry height="270" width="260" x="249" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-2" edge="1" parent="1" source="Ap3t-BdC0qoU0KIRZSTP-12" style="edgeStyle=none;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=12;startSize=8;endSize=8;" target="Ap3t-BdC0qoU0KIRZSTP-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="380" y="650" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-3" edge="1" parent="1" source="Ap3t-BdC0qoU0KIRZSTP-4" style="edgeStyle=none;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=12;startSize=8;endSize=8;" target="Ap3t-BdC0qoU0KIRZSTP-12">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="380" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="&lt;div&gt;Data - C1 Bilingual Dataset&lt;/div&gt;&lt;div&gt;26,819 samples, 52.2% VI&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="160" x="298" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div&gt;DPO + RPO (a=0.5)&lt;/div&gt;&lt;div&gt;+ cDPO (e=0.1)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="115" x="322.5" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div&gt;&lt;div&gt;&lt;div&gt;LoRA: r=16, a=32,&lt;/div&gt;&lt;div&gt;target = q_proj, v_proj&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="140" x="310" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;&lt;div&gt;&lt;div&gt;Randomized injection&lt;/div&gt;&lt;div&gt;45% start, 45% end, 10%&lt;/div&gt;&lt;div&gt;completion&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="151" x="310" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;div&gt;Security:&lt;/div&gt;&lt;div&gt;10-Axis Custom Attack&lt;/div&gt;&lt;div&gt;Suite&lt;/div&gt;&lt;div&gt;Cross-lingual EN/VN&lt;/div&gt;&lt;div&gt;Adaptive attacks&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="145" x="305" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;Comparison:&lt;/div&gt;&lt;div&gt;Llama-Base, SeaLLM-7B-&lt;/div&gt;&lt;div&gt;v2.5&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="150" x="304" y="870" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=16;" value="&lt;b&gt;training&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="349" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-11" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=16;" value="&lt;b&gt;evaluation&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="350" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-16" edge="1" parent="1" source="Ap3t-BdC0qoU0KIRZSTP-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Ap3t-BdC0qoU0KIRZSTP-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-14" parent="1" style="whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="5 sources:&#xa;PKU 10,813 EN&#xa;ViHOS 8,844 VI&#xa;ViHSD 4,162 VI&#xa;Hallucination 1,000 VI&#xa;Novel Attack 2,000 EN" vertex="1">
+          <mxGeometry height="110" width="165" x="295" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;Self-generated labels&lt;/div&gt;&lt;div&gt;from init model&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="140" x="315.5" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="Ap3t-BdC0qoU0KIRZSTP-18" parent="1" style="whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;div&gt;Utility:&lt;/div&gt;&lt;div&gt;MMLU, GSM8K, FRR&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="120" x="315.5" y="820" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,17 @@
+### **3\. Chúng ta có thể cải tiến gì từ thuật toán DPO gốc? Dựa trên cơ sở nghiên cứu nào?**
+
+Câu hỏi của anh rất xuất sắc. DPO không phải là điểm kết thúc, mà là một nền tảng để phát triển. Dự án của anh hoàn toàn có thể đề xuất những cải tiến dựa trên các nghiên cứu gần đây. Dưới đây là một số hướng đi có cơ sở vững chắc:
+
+| Hướng cải tiến | Mô tả | Cơ sở lý thuyết / Bài báo | Cách áp dụng cho dự án SecAlign |
+| :---- | :---- | :---- | :---- |
+| 1\. Kết hợp với SFT (Supervised Fine-Tuning)  | Thêm thành phần SFT loss vào quá trình huấn luyện DPO để mô hình không chỉ học sự ưa thích mà còn duy trì khả năng sinh văn bản tự nhiên. | Iterative Reasoning Preference Optimization  sử dụng modified DPO loss với thêm negative log-likelihood term. RPO (Rejection Pair Optimization) trong thư viện TRL cũng tích hợp sẵn tùy chọn này . | Khi huấn luyện, anh có thể thử nghiệm setting `rpo_alpha` trong `DPOConfig` để cân bằng giữa DPO loss và SFT loss trên các mẫu `chosen`. |
+| 2\. Sử dụng các biến thể Loss Function khác | DPO gốc dùng sigmoid loss. Các nghiên cứu khác đề xuất các loss function khác có thể phù hợp hơn cho một số tác vụ cụ thể. | IPO (Identity Preference Optimization)  giải quyết vấn đề overfitting. SimPO (Simple Preference Optimization)  đơn giản hóa loss function bằng cách loại bỏ tham số tham chiếu. | Anh có thể dễ dàng thử nghiệm các loss function này trong `DPOTrainer` của thư viện TRL bằng cách thay đổi tham số `loss_type="ipo"` hoặc `loss_type="simpo"`. |
+| 3\. Xử lý các cặp dữ liệu "hòa" (Ties) | Trong thực tế, có những cặp dữ liệu mà cả hai câu trả lời đều tốt hoặc đều xấu như nhau (tied). DPO gốc thường loại bỏ chúng. | "On Extending Direct Preference Optimization to Accommodate Ties"  là một nghiên cứu mới nhất (NeurIPS 2025\) chỉ ra rằng việc đưa các cặp "hòa" vào huấn luyện với các biến thể DPO phù hợp (Rao-Kupper, Davidson) giúp tăng cường tính chính quy (regularization) và cải thiện hiệu suất. | Đây là một hướng cải tiến rất mạnh và mang tính học thuật cao cho báo cáo của anh. Anh có thể lọc ra những prompt mà cả `chosen` và `rejected` đều có chất lượng tương đương (ví dụ: cùng an toàn hoặc cùng độc hại) để tạo thành tập dữ liệu "ties" riêng. |
+| 4\. Thêm yếu tố khám phá (Exploration) | DPO là thuật toán học offline, chỉ tối ưu trên tập dữ liệu có sẵn. | Exploratory Preference Optimization (XPO)  đề xuất thêm một "exploration bonus" vào loss function để mô hình có thể chủ động khám phá các vùng không gian mẫu mới, hứa hẹn khả năng vượt trội hơn. | Đây là hướng nâng cao hơn, đòi hỏi thay đổi thuật toán phức tạp hơn, nhưng nếu thành công, nó sẽ là điểm nhấn rất lớn cho dự án. |
+
+[http://arxiv.org.ezproxy.obspm.fr/abs/2404.19733v2](http://arxiv.org.ezproxy.obspm.fr/abs/2404.19733v2)
+
+[https://github.com/huggingface/trl/diffs/0?base\_sha=f5168fdbaf9cbf6a3f1bdc64dc44b9db3a9ae333\&head\_user=kawine\&name=main\&pull\_number=1734\&qualified\_name=refs%2Fheads%2Fmain\&sha1=f5168fdbaf9cbf6a3f1bdc64dc44b9db3a9ae333\&sha2=95f361bf4b0b04d3c10003b6f58a6d6b936d40db\&short\_path=15d651a\&unchanged=expanded\&w=false](https://github.com/huggingface/trl/diffs/0?base_sha=f5168fdbaf9cbf6a3f1bdc64dc44b9db3a9ae333&head_user=kawine&name=main&pull_number=1734&qualified_name=refs%2Fheads%2Fmain&sha1=f5168fdbaf9cbf6a3f1bdc64dc44b9db3a9ae333&sha2=95f361bf4b0b04d3c10003b6f58a6d6b936d40db&short_path=15d651a&unchanged=expanded&w=false)
+
+cdpo [https://arxiv.org/abs/2409.17431](https://arxiv.org/abs/2409.17431)  
+https://neurips.cc/virtual/2025/loc/san-diego/poster/120236

@@ -1,0 +1,4 @@
+Model,injecagent,mmlu,ifeval,cybersec
+llama3.1_8b_base,,,,
+secalign_finetuned,,,,
+phogpt_7b5,,,,

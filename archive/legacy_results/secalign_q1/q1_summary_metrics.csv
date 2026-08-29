@@ -1,0 +1,6 @@
+Model,MMLU (%),GSM8K (%),FRR (%),Avg ASR (%)
+Llama-Base,0.0,0.0,1.0,91.75
+SeaLLM-v2.5,0.0,0.0,0.6,85.0
+Qwen-2.5-7B,0.0,0.0,100.0,0.0
+Dolphin-3.1,0.0,0.0,100.0,0.0
+SecAlign-Merged,0.0,0.0,2.2,74.0

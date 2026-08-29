@@ -1,0 +1,3 @@
+[submodule "external/meta_secalign"]
+	path = external/meta_secalign
+	url = https://github.com/facebookresearch/Meta_SecAlign.git

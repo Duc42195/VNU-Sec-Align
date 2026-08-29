@@ -1,0 +1,6 @@
+{
+  "model": "Llama-3.1-8B-Instruct",
+  "total_samples": 2000,
+  "safe_responses": 906,
+  "asr": 0.5469999999999999
+}

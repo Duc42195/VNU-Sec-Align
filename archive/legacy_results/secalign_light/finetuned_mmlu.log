@@ -1,0 +1,65 @@
+INFO 03-22 12:17:58 [__init__.py:216] Automatically detected platform cuda.
+INFO 03-22 12:18:07 [utils.py:233] non-default args: {'seed': 1234, 'max_model_len': 8192, 'disable_log_stats': True, 'enable_lora': True, 'max_lora_rank': 128, 'model': '/workspace/checkpoints/dpo'}
+[nltk_data] Downloading package punkt_tab to /root/nltk_data...
+[nltk_data]   Package punkt_tab is already up-to-date!
+Traceback (most recent call last):
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/transformers/utils/hub.py", line 479, in cached_files
+    hf_hub_download(
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/huggingface_hub/utils/_validators.py", line 106, in _inner_fn
+    validate_repo_id(arg_value)
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/huggingface_hub/utils/_validators.py", line 154, in validate_repo_id
+    raise HFValidationError(
+huggingface_hub.errors.HFValidationError: Repo id must be in the form 'repo_name' or 'namespace/repo_name': '/workspace/checkpoints/dpo'. Use `repo_type` argument if needed.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/transformers/configuration_utils.py", line 721, in _get_config_dict
+    resolved_config_file = cached_file(
+                           ^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/transformers/utils/hub.py", line 322, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/transformers/utils/hub.py", line 531, in cached_files
+    resolved_files = [
+                     ^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/transformers/utils/hub.py", line 532, in <listcomp>
+    _get_cache_file_to_return(path_or_repo_id, filename, cache_dir, revision, repo_type)
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/transformers/utils/hub.py", line 143, in _get_cache_file_to_return
+    resolved_file = try_to_load_from_cache(
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/huggingface_hub/utils/_validators.py", line 106, in _inner_fn
+    validate_repo_id(arg_value)
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/huggingface_hub/utils/_validators.py", line 154, in validate_repo_id
+    raise HFValidationError(
+huggingface_hub.errors.HFValidationError: Repo id must be in the form 'repo_name' or 'namespace/repo_name': '/workspace/checkpoints/dpo'. Use `repo_type` argument if needed.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/Meta_SecAlign/test_lm_eval.py", line 93, in <module>
+    main(args)
+  File "/workspace/Meta_SecAlign/test_lm_eval.py", line 26, in main
+    lm_obj = VLLM(pretrained=base_model_path, lora_local_path=model_name_or_path_changed_lora_alpha, 
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/lm_eval/models/vllm_causallms.py", line 185, in __init__
+    self.model = LLM(**self.model_args)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/vllm/entrypoints/llm.py", line 297, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/vllm/v1/engine/llm_engine.py", line 169, in from_engine_args
+    vllm_config = engine_args.create_engine_config(usage_context)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/vllm/engine/arg_utils.py", line 1135, in create_engine_config
+    self.speculative_config) = maybe_override_with_speculators(
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/vllm/transformers_utils/config.py", line 501, in maybe_override_with_speculators
+    config_dict, _ = PretrainedConfig.get_config_dict(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/transformers/configuration_utils.py", line 662, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Meta_SecAlign/metasecalign/lib/python3.11/site-packages/transformers/configuration_utils.py", line 744, in _get_config_dict
+    raise OSError(
+OSError: Can't load the configuration of '/workspace/checkpoints/dpo'. If you were trying to load it from 'https://huggingface.co/models', make sure you don't have a local directory with the same name. Otherwise, make sure '/workspace/checkpoints/dpo' is the correct path to a directory containing a config.json file

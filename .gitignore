@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+venv/
+.venv/
+*.egg-info/
+
+# Model weights / checkpoints — large binaries, never committed
+checkpoints/**
+archive/legacy_checkpoints/**
+*.safetensors
+*.bin
+*.gguf
+!**/adapter_config.json
+
+# Legacy duplicate result archives — kept locally for reference only
+archive/legacy_duplicate_results/*.zip
+
+# OS/editor
+.DS_Store

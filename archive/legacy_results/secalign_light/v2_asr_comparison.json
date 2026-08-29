@@ -1,0 +1,10 @@
+{
+  "Model": [
+    "Base Model (Llama-3.1-8B-Instruct)",
+    "SecAlign (Fine-tuned)"
+  ],
+  "V2_Attack_ASR": [
+    54.7,
+    22.35
+  ]
+}

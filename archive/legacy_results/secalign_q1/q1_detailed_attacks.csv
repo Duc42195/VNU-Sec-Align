@@ -1,0 +1,31 @@
+Attack Type,Model,ASR (%)
+Multi-Turn,Llama-Base,95.0
+Encoding,Llama-Base,100.0
+Cross-Lingual,Llama-Base,63.5
+Semantic,Llama-Base,83.0
+Ctx Overflow,Llama-Base,94.0
+Homoglyph,Llama-Base,96.5
+Payload Split,Llama-Base,99.5
+Conditional,Llama-Base,90.5
+Base64,Llama-Base,100.0
+Leetspeak,Llama-Base,95.5
+Multi-Turn,SeaLLM-v2.5,97.5
+Encoding,SeaLLM-v2.5,100.0
+Cross-Lingual,SeaLLM-v2.5,54.5
+Semantic,SeaLLM-v2.5,85.5
+Ctx Overflow,SeaLLM-v2.5,69.5
+Homoglyph,SeaLLM-v2.5,76.5
+Payload Split,SeaLLM-v2.5,99.0
+Conditional,SeaLLM-v2.5,82.0
+Base64,SeaLLM-v2.5,100.0
+Leetspeak,SeaLLM-v2.5,85.5
+Multi-Turn,SecAlign-Merged,84.5
+Encoding,SecAlign-Merged,79.5
+Cross-Lingual,SecAlign-Merged,52.0
+Semantic,SecAlign-Merged,49.0
+Ctx Overflow,SecAlign-Merged,63.5
+Homoglyph,SecAlign-Merged,77.0
+Payload Split,SecAlign-Merged,88.0
+Conditional,SecAlign-Merged,68.0
+Base64,SecAlign-Merged,100.0
+Leetspeak,SecAlign-Merged,78.5

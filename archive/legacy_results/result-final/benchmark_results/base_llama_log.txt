@@ -1,0 +1,635 @@
+
+
+export OPENAI_CLIENT_CONFIG_PATH=data/openai_configs.yaml
+alpaca_eval --is_overwrite_leaderboard --model_outputs /content/Llama-3.1-8B-Instruct/none_none_loraalpha8.0_IH1_davinci_003_outputs.json
+
+
+INFO 03-11 15:23:13 [utils.py:238] non-default args: {'trust_remote_code': True, 'disable_log_stats': True, 'max_lora_rank': 64, 'model': '/content/Llama-3.1-8B-Instruct'}
+INFO 03-11 15:23:36 [model.py:531] Resolved architecture: LlamaForCausalLM
+INFO 03-11 15:23:36 [model.py:1554] Using max model len 131072
+INFO 03-11 15:23:36 [scheduler.py:231] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 03-11 15:23:36 [vllm.py:747] Asynchronous scheduling is enabled.
+WARNING 03-11 15:23:37 [system_utils.py:152] We must use the `spawn` multiprocessing start method. Overriding VLLM_WORKER_MULTIPROC_METHOD to 'spawn'. See https://docs.vllm.ai/en/latest/usage/troubleshooting.html#python-multiprocessing for more information. Reasons: CUDA is initialized
+(EngineCore_DP0 pid=8612) INFO 03-11 15:23:56 [core.py:101] Initializing a V1 LLM engine (v0.17.1) with config: model='/content/Llama-3.1-8B-Instruct', speculative_config=None, tokenizer='/content/Llama-3.1-8B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=131072, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_fallback=False, disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/content/Llama-3.1-8B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'level': None, 'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'splitting_ops': ['vllm::unified_attention', 'vllm::unified_attention_with_output', 'vllm::unified_mla_attention', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::gdn_attention_core', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'compile_sizes': [], 'compile_ranges_split_points': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore_DP0 pid=8612) INFO 03-11 15:23:57 [parallel_state.py:1393] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.28.0.12:50851 backend=nccl
+(EngineCore_DP0 pid=8612) INFO 03-11 15:23:57 [parallel_state.py:1715] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100] EngineCore failed to start.
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100] Traceback (most recent call last):
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1090, in run_engine_core
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 834, in __init__
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     super().__init__(
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 110, in __init__
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     self.model_executor = executor_class(vllm_config)
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     self._init_executor()
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/uniproc_executor.py", line 48, in _init_executor
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     self.driver_worker.init_device()
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/worker_base.py", line 326, in init_device
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     self.worker.init_device()  # type: ignore
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py", line 285, in init_device
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100]     raise ValueError(
+(EngineCore_DP0 pid=8612) ERROR 03-11 15:23:58 [core.py:1100] ValueError: Free memory on device cuda:0 (48.27/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+
+
+export OPENAI_CLIENT_CONFIG_PATH=data/openai_configs.yaml
+alpaca_eval --is_overwrite_leaderboard --reference_outputs data/SEP_dataset_test_Meta-Llama-3-8B-Instruct.json --metric_kwargs "{'glm_name':'length_controlled_minimal'}" --model_outputs /content/Llama-3.1-8B-Instruct/none_none_loraalpha8.0_IH1_SEP_dataset_test.json
+
+
+INFO 03-11 15:24:22 [utils.py:238] non-default args: {'trust_remote_code': True, 'disable_log_stats': True, 'max_lora_rank': 64, 'model': '/content/Llama-3.1-8B-Instruct'}
+INFO 03-11 15:24:22 [model.py:531] Resolved architecture: LlamaForCausalLM
+INFO 03-11 15:24:22 [model.py:1554] Using max model len 131072
+INFO 03-11 15:24:22 [scheduler.py:231] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 03-11 15:24:22 [vllm.py:747] Asynchronous scheduling is enabled.
+WARNING 03-11 15:24:24 [system_utils.py:152] We must use the `spawn` multiprocessing start method. Overriding VLLM_WORKER_MULTIPROC_METHOD to 'spawn'. See https://docs.vllm.ai/en/latest/usage/troubleshooting.html#python-multiprocessing for more information. Reasons: CUDA is initialized
+(EngineCore_DP0 pid=8972) INFO 03-11 15:24:42 [core.py:101] Initializing a V1 LLM engine (v0.17.1) with config: model='/content/Llama-3.1-8B-Instruct', speculative_config=None, tokenizer='/content/Llama-3.1-8B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=131072, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_fallback=False, disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/content/Llama-3.1-8B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'level': None, 'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'splitting_ops': ['vllm::unified_attention', 'vllm::unified_attention_with_output', 'vllm::unified_mla_attention', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::gdn_attention_core', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'compile_sizes': [], 'compile_ranges_split_points': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore_DP0 pid=8972) INFO 03-11 15:24:44 [parallel_state.py:1393] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.28.0.12:57981 backend=nccl
+(EngineCore_DP0 pid=8972) INFO 03-11 15:24:44 [parallel_state.py:1715] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100] EngineCore failed to start.
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100] Traceback (most recent call last):
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1090, in run_engine_core
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 834, in __init__
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     super().__init__(
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 110, in __init__
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     self.model_executor = executor_class(vllm_config)
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     self._init_executor()
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/uniproc_executor.py", line 48, in _init_executor
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     self.driver_worker.init_device()
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/worker_base.py", line 326, in init_device
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     self.worker.init_device()  # type: ignore
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py", line 285, in init_device
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100]     raise ValueError(
+(EngineCore_DP0 pid=8972) ERROR 03-11 15:24:44 [core.py:1100] ValueError: Free memory on device cuda:0 (48.27/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+INFO 03-11 15:25:10 [utils.py:238] non-default args: {'trust_remote_code': True, 'disable_log_stats': True, 'max_lora_rank': 64, 'model': '/content/Llama-3.1-8B-Instruct'}
+INFO 03-11 15:25:10 [model.py:531] Resolved architecture: LlamaForCausalLM
+INFO 03-11 15:25:10 [model.py:1554] Using max model len 131072
+INFO 03-11 15:25:10 [scheduler.py:231] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 03-11 15:25:10 [vllm.py:747] Asynchronous scheduling is enabled.
+WARNING 03-11 15:25:12 [system_utils.py:152] We must use the `spawn` multiprocessing start method. Overriding VLLM_WORKER_MULTIPROC_METHOD to 'spawn'. See https://docs.vllm.ai/en/latest/usage/troubleshooting.html#python-multiprocessing for more information. Reasons: CUDA is initialized
+(EngineCore_DP0 pid=9339) INFO 03-11 15:25:31 [core.py:101] Initializing a V1 LLM engine (v0.17.1) with config: model='/content/Llama-3.1-8B-Instruct', speculative_config=None, tokenizer='/content/Llama-3.1-8B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=131072, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_fallback=False, disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/content/Llama-3.1-8B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'level': None, 'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'splitting_ops': ['vllm::unified_attention', 'vllm::unified_attention_with_output', 'vllm::unified_mla_attention', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::gdn_attention_core', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'compile_sizes': [], 'compile_ranges_split_points': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore_DP0 pid=9339) INFO 03-11 15:25:33 [parallel_state.py:1393] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.28.0.12:44161 backend=nccl
+(EngineCore_DP0 pid=9339) INFO 03-11 15:25:33 [parallel_state.py:1715] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100] EngineCore failed to start.
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100] Traceback (most recent call last):
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1090, in run_engine_core
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 834, in __init__
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     super().__init__(
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 110, in __init__
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     self.model_executor = executor_class(vllm_config)
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     self._init_executor()
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/uniproc_executor.py", line 48, in _init_executor
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     self.driver_worker.init_device()
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/worker_base.py", line 326, in init_device
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     self.worker.init_device()  # type: ignore
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py", line 285, in init_device
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100]     raise ValueError(
+(EngineCore_DP0 pid=9339) ERROR 03-11 15:25:33 [core.py:1100] ValueError: Free memory on device cuda:0 (48.27/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+INFO 03-11 15:25:58 [utils.py:238] non-default args: {'trust_remote_code': True, 'disable_log_stats': True, 'max_lora_rank': 64, 'model': '/content/Llama-3.1-8B-Instruct'}
+INFO 03-11 15:25:58 [model.py:531] Resolved architecture: LlamaForCausalLM
+INFO 03-11 15:25:58 [model.py:1554] Using max model len 131072
+INFO 03-11 15:25:58 [scheduler.py:231] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 03-11 15:25:58 [vllm.py:747] Asynchronous scheduling is enabled.
+WARNING 03-11 15:25:59 [system_utils.py:152] We must use the `spawn` multiprocessing start method. Overriding VLLM_WORKER_MULTIPROC_METHOD to 'spawn'. See https://docs.vllm.ai/en/latest/usage/troubleshooting.html#python-multiprocessing for more information. Reasons: CUDA is initialized
+(EngineCore_DP0 pid=9691) INFO 03-11 15:26:18 [core.py:101] Initializing a V1 LLM engine (v0.17.1) with config: model='/content/Llama-3.1-8B-Instruct', speculative_config=None, tokenizer='/content/Llama-3.1-8B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=131072, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_fallback=False, disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/content/Llama-3.1-8B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'level': None, 'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'splitting_ops': ['vllm::unified_attention', 'vllm::unified_attention_with_output', 'vllm::unified_mla_attention', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::gdn_attention_core', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'compile_sizes': [], 'compile_ranges_split_points': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore_DP0 pid=9691) INFO 03-11 15:26:19 [parallel_state.py:1393] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.28.0.12:38023 backend=nccl
+(EngineCore_DP0 pid=9691) INFO 03-11 15:26:19 [parallel_state.py:1715] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100] EngineCore failed to start.
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100] Traceback (most recent call last):
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1090, in run_engine_core
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 834, in __init__
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     super().__init__(
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 110, in __init__
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     self.model_executor = executor_class(vllm_config)
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     self._init_executor()
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/uniproc_executor.py", line 48, in _init_executor
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     self.driver_worker.init_device()
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/worker_base.py", line 326, in init_device
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     self.worker.init_device()  # type: ignore
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py", line 285, in init_device
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100]     raise ValueError(
+(EngineCore_DP0 pid=9691) ERROR 03-11 15:26:20 [core.py:1100] ValueError: Free memory on device cuda:0 (48.27/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+python test.py --attack none straightforward straightforward_before ignore ignore_before completion completion_ignore completion_llama33_70B completion_ignore_llama33_70B --defense none --test_data data/davinci_003_outputs.json --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+python test.py --attack none straightforward straightforward_before ignore ignore_before completion completion_ignore completion_llama33_70B completion_ignore_llama33_70B --defense none --test_data data/SEP_dataset_test.json --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+python test_lm_eval.py --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+python test_injecagent.py --defense sandwich --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+python test.py --attack straightforward --defense none --test_data data/TaskTracker_dataset_test.json --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+
+Executing...
+python test.py --attack none straightforward straightforward_before ignore ignore_before completion completion_ignore completion_llama33_70B completion_ignore_llama33_70B --defense none --test_data data/davinci_003_outputs.json --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+
+Executing...
+python test.py --attack none straightforward straightforward_before ignore ignore_before completion completion_ignore completion_llama33_70B completion_ignore_llama33_70B --defense none --test_data data/SEP_dataset_test.json --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+
+Executing...
+python test_lm_eval.py --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+
+Executing...
+python test_injecagent.py --defense sandwich --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+
+Executing...
+python test.py --attack straightforward --defense none --test_data data/TaskTracker_dataset_test.json --lora_alpha 8.0 -m /content/Llama-3.1-8B-Instruct
+
+2026-03-11 15:23:03.025281: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-03-11 15:23:03.043866: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1773242583.066664    8306 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1773242583.074189    8306 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1773242583.093974    8306 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242583.094006    8306 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242583.094009    8306 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242583.094011    8306 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-03-11 15:23:03.099023: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+2026-03-11 15:23:47.089139: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1773242627.111657    8612 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1773242627.119134    8612 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1773242627.137916    8612 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242627.137941    8612 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242627.137944    8612 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242627.137946    8612 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+(EngineCore_DP0 pid=8612) Process EngineCore_DP0:
+(EngineCore_DP0 pid=8612) Traceback (most recent call last):
+(EngineCore_DP0 pid=8612)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore_DP0 pid=8612)     self.run()
+(EngineCore_DP0 pid=8612)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore_DP0 pid=8612)     self._target(*self._args, **self._kwargs)
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1104, in run_engine_core
+(EngineCore_DP0 pid=8612)     raise e
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1090, in run_engine_core
+(EngineCore_DP0 pid=8612)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore_DP0 pid=8612)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8612)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8612)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 834, in __init__
+(EngineCore_DP0 pid=8612)     super().__init__(
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 110, in __init__
+(EngineCore_DP0 pid=8612)     self.model_executor = executor_class(vllm_config)
+(EngineCore_DP0 pid=8612)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8612)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8612)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore_DP0 pid=8612)     self._init_executor()
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/uniproc_executor.py", line 48, in _init_executor
+(EngineCore_DP0 pid=8612)     self.driver_worker.init_device()
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/worker_base.py", line 326, in init_device
+(EngineCore_DP0 pid=8612)     self.worker.init_device()  # type: ignore
+(EngineCore_DP0 pid=8612)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8612)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8612)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py", line 285, in init_device
+(EngineCore_DP0 pid=8612)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore_DP0 pid=8612)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8612)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore_DP0 pid=8612)     raise ValueError(
+(EngineCore_DP0 pid=8612) ValueError: Free memory on device cuda:0 (48.27/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W311 15:23:59.008248054 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+Traceback (most recent call last):
+  File "/content/Meta_SecAlign/test.py", line 334, in <module>
+    else: test_vllm(args)
+          ^^^^^^^^^^^^^^^
+  File "/content/Meta_SecAlign/test.py", line 278, in test_vllm
+    model, tokenizer = load_vllm_model(args.model_name_or_path, args.tensor_parallel_size)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/Meta_SecAlign/utils.py", line 191, in load_vllm_model
+    model = LLM(model=base_model_path, enable_lora=base_model_path != model_name_or_path,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/llm.py", line 379, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/llm_engine.py", line 177, in from_engine_args
+    return cls(
+           ^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/llm_engine.py", line 111, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 98, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 734, in __init__
+    super().__init__(
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 569, in __init__
+    with launch_core_engines(
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 951, in launch_core_engines
+    wait_for_engine_startup(
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 1010, in wait_for_engine_startup
+    raise RuntimeError(
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+2026-03-11 15:24:13.022198: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-03-11 15:24:13.040108: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1773242653.062464    8823 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1773242653.069865    8823 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1773242653.088999    8823 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242653.089026    8823 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242653.089029    8823 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242653.089031    8823 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-03-11 15:24:13.094006: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+2026-03-11 15:24:33.988769: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1773242674.010911    8972 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1773242674.018289    8972 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1773242674.036961    8972 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242674.036987    8972 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242674.036990    8972 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242674.036993    8972 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+(EngineCore_DP0 pid=8972) Process EngineCore_DP0:
+(EngineCore_DP0 pid=8972) Traceback (most recent call last):
+(EngineCore_DP0 pid=8972)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore_DP0 pid=8972)     self.run()
+(EngineCore_DP0 pid=8972)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore_DP0 pid=8972)     self._target(*self._args, **self._kwargs)
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1104, in run_engine_core
+(EngineCore_DP0 pid=8972)     raise e
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1090, in run_engine_core
+(EngineCore_DP0 pid=8972)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore_DP0 pid=8972)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8972)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8972)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 834, in __init__
+(EngineCore_DP0 pid=8972)     super().__init__(
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 110, in __init__
+(EngineCore_DP0 pid=8972)     self.model_executor = executor_class(vllm_config)
+(EngineCore_DP0 pid=8972)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8972)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8972)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore_DP0 pid=8972)     self._init_executor()
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/uniproc_executor.py", line 48, in _init_executor
+(EngineCore_DP0 pid=8972)     self.driver_worker.init_device()
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/worker_base.py", line 326, in init_device
+(EngineCore_DP0 pid=8972)     self.worker.init_device()  # type: ignore
+(EngineCore_DP0 pid=8972)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=8972)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=8972)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py", line 285, in init_device
+(EngineCore_DP0 pid=8972)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore_DP0 pid=8972)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=8972)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore_DP0 pid=8972)     raise ValueError(
+(EngineCore_DP0 pid=8972) ValueError: Free memory on device cuda:0 (48.27/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W311 15:24:46.838929638 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+Traceback (most recent call last):
+  File "/content/Meta_SecAlign/test.py", line 334, in <module>
+    else: test_vllm(args)
+          ^^^^^^^^^^^^^^^
+  File "/content/Meta_SecAlign/test.py", line 278, in test_vllm
+    model, tokenizer = load_vllm_model(args.model_name_or_path, args.tensor_parallel_size)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/Meta_SecAlign/utils.py", line 191, in load_vllm_model
+    model = LLM(model=base_model_path, enable_lora=base_model_path != model_name_or_path,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/llm.py", line 379, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/llm_engine.py", line 177, in from_engine_args
+    return cls(
+           ^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/llm_engine.py", line 111, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 98, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 734, in __init__
+    super().__init__(
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 569, in __init__
+    with launch_core_engines(
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 951, in launch_core_engines
+    wait_for_engine_startup(
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 1010, in wait_for_engine_startup
+    raise RuntimeError(
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+Traceback (most recent call last):
+  File "/content/Meta_SecAlign/test_lm_eval.py", line 9, in <module>
+    import lm_eval
+ModuleNotFoundError: No module named 'lm_eval'
+2026-03-11 15:24:58.032880: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-03-11 15:24:58.050999: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1773242698.074009    9182 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1773242698.081554    9182 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1773242698.101518    9182 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242698.101555    9182 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242698.101557    9182 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242698.101560    9182 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-03-11 15:24:58.106618: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+2026-03-11 15:25:17.803762: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1773242717.826027    9339 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1773242717.833275    9339 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1773242717.851958    9339 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242717.851986    9339 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242717.851988    9339 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242717.851990    9339 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+(EngineCore_DP0 pid=9339) Process EngineCore_DP0:
+(EngineCore_DP0 pid=9339) Traceback (most recent call last):
+(EngineCore_DP0 pid=9339)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore_DP0 pid=9339)     self.run()
+(EngineCore_DP0 pid=9339)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore_DP0 pid=9339)     self._target(*self._args, **self._kwargs)
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1104, in run_engine_core
+(EngineCore_DP0 pid=9339)     raise e
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1090, in run_engine_core
+(EngineCore_DP0 pid=9339)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore_DP0 pid=9339)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9339)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9339)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 834, in __init__
+(EngineCore_DP0 pid=9339)     super().__init__(
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 110, in __init__
+(EngineCore_DP0 pid=9339)     self.model_executor = executor_class(vllm_config)
+(EngineCore_DP0 pid=9339)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9339)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9339)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore_DP0 pid=9339)     self._init_executor()
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/uniproc_executor.py", line 48, in _init_executor
+(EngineCore_DP0 pid=9339)     self.driver_worker.init_device()
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/worker_base.py", line 326, in init_device
+(EngineCore_DP0 pid=9339)     self.worker.init_device()  # type: ignore
+(EngineCore_DP0 pid=9339)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9339)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9339)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py", line 285, in init_device
+(EngineCore_DP0 pid=9339)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore_DP0 pid=9339)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9339)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore_DP0 pid=9339)     raise ValueError(
+(EngineCore_DP0 pid=9339) ValueError: Free memory on device cuda:0 (48.27/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W311 15:25:35.735212529 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+Traceback (most recent call last):
+  File "/content/Meta_SecAlign/test_injecagent.py", line 587, in <module>
+    else: model, tokenizer = load_vllm_model(params['model_name_or_path'], tensor_parallel_size=params['tensor_parallel_size'])
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/Meta_SecAlign/utils.py", line 191, in load_vllm_model
+    model = LLM(model=base_model_path, enable_lora=base_model_path != model_name_or_path,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/llm.py", line 379, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/llm_engine.py", line 177, in from_engine_args
+    return cls(
+           ^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/llm_engine.py", line 111, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 98, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 734, in __init__
+    super().__init__(
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 569, in __init__
+    with launch_core_engines(
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 951, in launch_core_engines
+    wait_for_engine_startup(
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 1010, in wait_for_engine_startup
+    raise RuntimeError(
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+2026-03-11 15:25:48.747817: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-03-11 15:25:48.765805: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1773242748.788563    9553 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1773242748.796095    9553 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1773242748.815092    9553 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242748.815118    9553 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242748.815121    9553 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242748.815122    9553 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-03-11 15:25:48.820067: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+The argument `trust_remote_code` is to be used with Auto classes. It has no effect here and is ignored.
+2026-03-11 15:26:09.566107: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1773242769.590555    9691 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1773242769.598092    9691 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1773242769.617626    9691 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242769.617654    9691 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242769.617656    9691 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1773242769.617658    9691 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+(EngineCore_DP0 pid=9691) Process EngineCore_DP0:
+(EngineCore_DP0 pid=9691) Traceback (most recent call last):
+(EngineCore_DP0 pid=9691)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore_DP0 pid=9691)     self.run()
+(EngineCore_DP0 pid=9691)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore_DP0 pid=9691)     self._target(*self._args, **self._kwargs)
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1104, in run_engine_core
+(EngineCore_DP0 pid=9691)     raise e
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1090, in run_engine_core
+(EngineCore_DP0 pid=9691)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore_DP0 pid=9691)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9691)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9691)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 834, in __init__
+(EngineCore_DP0 pid=9691)     super().__init__(
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 110, in __init__
+(EngineCore_DP0 pid=9691)     self.model_executor = executor_class(vllm_config)
+(EngineCore_DP0 pid=9691)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9691)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9691)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore_DP0 pid=9691)     self._init_executor()
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/uniproc_executor.py", line 48, in _init_executor
+(EngineCore_DP0 pid=9691)     self.driver_worker.init_device()
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/worker_base.py", line 326, in init_device
+(EngineCore_DP0 pid=9691)     self.worker.init_device()  # type: ignore
+(EngineCore_DP0 pid=9691)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore_DP0 pid=9691)     return func(*args, **kwargs)
+(EngineCore_DP0 pid=9691)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py", line 285, in init_device
+(EngineCore_DP0 pid=9691)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore_DP0 pid=9691)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore_DP0 pid=9691)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore_DP0 pid=9691)     raise ValueError(
+(EngineCore_DP0 pid=9691) ValueError: Free memory on device cuda:0 (48.27/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W311 15:26:22.436049806 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+Traceback (most recent call last):
+  File "/content/Meta_SecAlign/test.py", line 334, in <module>
+    else: test_vllm(args)
+          ^^^^^^^^^^^^^^^
+  File "/content/Meta_SecAlign/test.py", line 278, in test_vllm
+    model, tokenizer = load_vllm_model(args.model_name_or_path, args.tensor_parallel_size)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/Meta_SecAlign/utils.py", line 191, in load_vllm_model
+    model = LLM(model=base_model_path, enable_lora=base_model_path != model_name_or_path,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/llm.py", line 379, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/llm_engine.py", line 177, in from_engine_args
+    return cls(
+           ^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/llm_engine.py", line 111, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 98, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 734, in __init__
+    super().__init__(
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 569, in __init__
+    with launch_core_engines(
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 951, in launch_core_engines
+    wait_for_engine_startup(
+  File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 1010, in wait_for_engine_startup
+    raise RuntimeError(
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}

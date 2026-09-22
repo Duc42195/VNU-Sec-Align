@@ -762,6 +762,34 @@
 
 ---
 
+### #22 — `sep_reference_gen.py` (port `setup.py:565-604`) đã chạy thật, kiểm chứng khớp code gốc Meta
+
+- **Context:** T1-T3 (sanity check chính thức qua `meta_eval_runner.run_sep()`) cần
+  `data/SEP_dataset_test.json` + file tham chiếu — Meta tự sinh 2 file này trong `setup.py`, không
+  công khai sẵn. Đã viết `sep_reference_gen.py` (session trước) port lại đúng đoạn code đó, KHÔNG
+  chạy nguyên `setup.py` (tránh tải nhầm 5 model đầy đủ, xem `fetch_meta_secalign_data_urls.py`).
+  Điểm khác duy nhất so với bản gốc: `setup.py` dùng biến `tokenizer` đã bị sửa chat_template ngay
+  trong cùng lệnh chạy (xoá system prompt mặc định, dòng 70-178); `sep_reference_gen.py` load lại
+  tokenizer đã lưu sẵn từ 1 lần chạy `setup.py` trước đó bị chủ động dừng giữa chừng (xem log
+  session cũ) — đây là 1 thay thế cần kiểm chứng, không phải giả định suông.
+- **Decision:** Xác minh trực tiếp (không suy diễn) thay thế trên là đúng: `AutoTokenizer.from_pretrained('external/meta_secalign/data')`
+  (dùng `transformers==4.57.1`, bản pin trong `requirements.txt`) tự động đọc `data/chat_template.jinja`
+  làm file riêng (quy ước mới của HF — `tokenizer_config.json` không nhúng `chat_template` nữa) và
+  `tokenizer.chat_template` sau khi load **khớp byte-by-byte** với `chat_template.jinja` đã lưu —
+  tức đúng bằng trạng thái `tokenizer` trong bộ nhớ của `setup.py` sau khi nó tự sửa. Đã chạy thật
+  trên pod (2026-09-22, log `results/pod_logs/sep_gen.txt`): 9160 mẫu SEP, ~53 phút (~3.23 it/s),
+  sinh đúng `SEP_dataset_test.json` + `SEP_dataset_test_Meta-Llama-3-8B-Instruct.json` (đã kéo về
+  kiểm tra nội dung, đúng schema — `instruction`/`input`/`injection`/`witness`/`output`).
+- **Rejected alternatives:** Redo lại toàn bộ đoạn sửa chat_template (dòng 70-178 của `setup.py`,
+  ~100 dòng string literal) inline trong `sep_reference_gen.py` — loại vì đã có sẵn kết quả của
+  đúng đoạn đó (lưu từ lần `setup.py` chạy dở trước khi bị dừng vì lý do khác), verify lại rẻ hơn
+  và ít rủi ro gõ sai hơn là chép lại 100 dòng jinja template tay.
+- **Consequences:** T1-T3's prerequisite data đã sẵn sàng — `meta_eval_runner.run_sep()` giờ chạy
+  được. Số liệu SEP ASR/utility thật (T3 deliverable) **chưa có** — cần chạy `run_sep()` thật cho
+  `llama_3_1_8b_instruct`/`meta_secalign_8b` rồi mới đối chiếu paper gốc.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

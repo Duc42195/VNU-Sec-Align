@@ -332,6 +332,13 @@ từ dữ liệu tiếng Anh, có một khoảng hở tổng quát hoá sang ti�
 **Hạ tầng (2026-09-22)**: đã dựng xong pipeline cache môi trường cho pod thuê
 (`tools/pod_setup/build_env_cache.sh` + `pod_init.sh`, xem `tools/pod_setup/manual.md`) — build 1
 lần trên máy mạng tốt, upload lên Hugging Face, pod chỉ cần tải về thay vì cài trực tiếp từ PyPI
-(từng bị nghẽn route nặng). Đang trong quá trình setup pod thật; còn thiếu trước khi chạy T1-T3
-chính thức: sinh `SEP_dataset_test.json` (script `sep_reference_gen.py` đã viết, cần chạy 1 lần có
-GPU trên pod).
+(từng bị nghẽn route nặng).
+
+**Prerequisite T1-T3 đã xong (2026-09-22)**: `sep_reference_gen.py` (port lại đúng
+`external/meta_secalign/setup.py:565-604`, xem `.agents/record.md` Decision #22 để biết cách kiểm
+chứng khớp code gốc — đặc biệt điểm thay thế duy nhất, dùng lại tokenizer đã sửa chat_template lưu
+sẵn thay vì redo surgery, đã xác minh khớp byte-by-byte) đã chạy thật trên pod: 9160 mẫu SEP, ~53
+phút, sinh đúng `data/SEP_dataset_test.json` + file tham chiếu. `meta_eval_runner.run_sep()` giờ
+chạy được — **còn thiếu**: chạy thật `run_sep()`/`run_alpacafarm()`/... cho `llama_3_1_8b_instruct`
+và `meta_secalign_8b` để có số liệu T3 (đối chiếu paper gốc), chưa có số liệu SEP ASR/utility chính
+thức nào.

@@ -32,6 +32,17 @@
 # Chỉ cần chạy lại khi: requirements.txt của Meta đổi, đổi version torchtune, hoặc setup.py của
 # Meta đổi URL nguồn dữ liệu — KHÔNG cần chạy lại mỗi phiên làm việc.
 #
+# 2026-09-22 (lần 3): phát hiện numpy==1.26.4 (pin trong requirements.txt) không có wheel dựng sẵn
+# cho Python 3.13 trên PyPI -- bước [2b/4] dưới đây phải tự build nó từ sdist NGAY TRÊN MÁY CHẠY
+# SCRIPT NÀY, ra .so gắn chặt glibc của máy đó (không portable sang pod glibc cũ hơn -- lỗi thật
+# gặp phải: "GLIBC_2.38 not found" khi import trên pod Ubuntu 22.04/glibc 2.35). KHÔNG đổi version
+# numpy ở đây để né lỗi (numpy là dependency chung, đổi version có thể phá vỡ tổ hợp version Meta
+# đã pin) -- thay vào đó, pod_init.sh tự `uv pip install --reinstall numpy==1.26.4` NGAY TRÊN POD
+# sau khi copy cache, để build lại đúng theo glibc thật của từng pod. cupy-cuda12x/ray/vllm cũng
+# có tag .dist-info khác thường ("linux_x86_64" không phải "manylinux*") nhưng xác minh là wheel
+# PyPI thật (không phải build tại chỗ) -- reinstall thêm cho các gói này trong pod_init.sh chỉ là
+# phòng hờ, không phải fix bắt buộc như numpy.
+#
 # Yêu cầu trước khi chạy: `uv` đã cài (curl -LsSf https://astral.sh/uv/install.sh | sh), và đã
 # `huggingface-cli login`/có token HF_TOKEN với quyền write vào repo đích.
 

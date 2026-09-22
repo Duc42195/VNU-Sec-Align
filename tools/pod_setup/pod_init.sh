@@ -82,6 +82,18 @@ echo "site-packages đích: $SITE_PACKAGES"
 cp -r "$CACHE_DIR/pod_site_packages/." "$SITE_PACKAGES/"
 df -h / | tail -1  # và SAU khi copy, để biết còn bao nhiêu cho model/data
 
+# 2026-09-22: numpy==1.26.4 KHÔNG có wheel dựng sẵn cho Python 3.13 trên PyPI -- khi
+# build_env_cache.sh chạy `uv pip install --target ...`, uv phải tự build numpy từ sdist NGAY
+# TRÊN LAPTOP, ra 1 file .so gắn chặt glibc của laptop (2.43 trên máy build lần này). Copy sang
+# pod glibc cũ hơn (vd Ubuntu 22.04, glibc 2.35) sẽ lỗi "GLIBC_2.38 not found" ngay khi import
+# torch (torch import numpy nội bộ). Fix: cài lại numpy NGAY TRÊN POD (không qua cache) để nó tự
+# build/tải đúng theo glibc thật của máy này. cupy-cuda12x/ray/vllm cũng từng bị nghi tương tự khi
+# rà `Tag:` trong .dist-info (không phải "manylinux*") nhưng xác minh lại là wheel PyPI thật (nhà
+# phát hành tự đóng gói vậy, không phải build tại chỗ) -- reinstall thêm cho chắc, không hại gì
+# nếu bản cache đã đúng sẵn (uv sẽ chỉ redownload).
+echo "=== Cài lại numpy (+cupy/ray/vllm để chắc chắn) khớp glibc thật của pod, không qua cache ==="
+uv pip install --reinstall numpy==1.26.4 cupy-cuda12x==13.6.0 ray==2.50.1 vllm==0.11.0
+
 echo "--- kiểm tra import (không phải chỉ copy xong là chắc chắn chạy được) ---"
 python3 -c "
 import torch, transformers, peft, trl, bitsandbytes, accelerate, vllm, torchtune, torchao

@@ -30,6 +30,11 @@ ANCHOR_HYPERPARAMS = {
     "epochs": 3,
     "rpo_alpha": 0.5,
     "label_smoothing": 0.1,
+    # yaml:78,80 -- effective batch 32. HF Trainer's own default (8, no grad accum) OOMs a single
+    # 24GB-class GPU on an 8B model at MAX_LENGTH=2048 (confirmed: real OOM on the pod, DPO's
+    # concatenated chosen+rejected forward pass, lm_head logits over the full 128256 vocab).
+    "per_device_train_batch_size": 2,
+    "gradient_accumulation_steps": 16,
 }
 
 # q_proj/v_proj are literal from helpers/llama3.1_8B_lora.yaml:25. gate_proj/up_proj/down_proj are

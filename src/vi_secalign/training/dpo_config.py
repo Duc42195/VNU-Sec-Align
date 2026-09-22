@@ -99,4 +99,9 @@ def build_dpo_config(
         save_strategy="steps",
         save_steps=save_steps,
         save_total_limit=save_total_limit,
+        # HF Trainer's own default (per_device_train_batch_size=8, no grad accum) OOMs a single
+        # 24GB-class GPU here -- see ANCHOR_HYPERPARAMS comment (yaml:78,80 effective batch 32).
+        per_device_train_batch_size=ANCHOR_HYPERPARAMS["per_device_train_batch_size"],
+        gradient_accumulation_steps=ANCHOR_HYPERPARAMS["gradient_accumulation_steps"],
+        gradient_checkpointing=True,
     )

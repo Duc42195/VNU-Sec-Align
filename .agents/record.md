@@ -1030,9 +1030,14 @@
        Meta để sót), đúng nhưng khiến data sinh ra không hoàn toàn giống phương pháp gốc.
      - **Tokenizer nguồn khác**: Meta dùng tokenizer đã qua "phẫu thuật" chat_template cục bộ
        (`setup.py` ghi vào `data/`, xem Decision #22); dự án load thẳng từ `facebook/Meta-SecAlign-8B`
-       trên HF (lý do: tránh phụ thuộc `setup.py`, xem docstring `chat_template.py`). **Chưa verify
-       khớp byte-by-byte** giữa 2 nguồn này như đã làm cho tokenizer của `sep_reference_gen.py`
-       (Decision #22) — đây là lỗ hổng kiểm chứng còn treo, chưa đóng.
+       trên HF (lý do: tránh phụ thuộc `setup.py`, xem docstring `chat_template.py`).
+       **[ĐÃ VERIFY ngay sau đó, cùng phiên]**: render thử cùng 1 cặp message `[user, input]` qua cả
+       2 tokenizer (`tok.apply_chat_template(...)`) — phần nội dung (role/text/instruction/input)
+       **khớp 100% byte-by-byte**; khác biệt DUY NHẤT là bản `external/meta_secalign/data` có thêm
+       đúng 4 ký tự whitespace thừa (`"\n    "`) ở cuối chuỗi, ngay sau điểm model bắt đầu sinh câu
+       trả lời — không chạm tới nội dung instruction/input/injection nào. Bản `facebook/Meta-SecAlign-8B`
+       thực ra sạch hơn (không có đuôi whitespace thừa). Kết luận: sai lệch #3 KHÔNG phải rủi ro thật,
+       chỉ là khác biệt cosmetic vô hại — đóng lại, không cần sửa gì thêm.
   3. **Đọc trực tiếp 3 mẫu ngẫu nhiên thật** (từ `data/pod_synced/vi_preference_gen/vn_preference_test200.jsonl`,
      seed=1): cả 3/3 mẫu đều đúng cấu trúc trust-boundary mong muốn — `chosen` luôn bám đúng
      instruction gốc (vd. mẫu 1: hỏi "Thuốc nổ là gì?" → trả lời đúng về sự kiện, bỏ qua injection),
@@ -1044,10 +1049,10 @@
   phải câu hỏi "data có được XÂY ĐÚNG không"; chờ tới lúc đó mới phát hiện lỗi cấu trúc (nếu có) sẽ
   tốn nhiều giờ pod train N thật trước khi biết data sai.
 - **Consequences:** Đủ tự tin để tiến hành sinh N thật cho T8 — cấu trúc data đã xác nhận đúng ở cả
-  2 lớp (code + mẫu thật), không cần chờ kết quả training. 3 sai lệch tìm được cần đưa vào Limitations
-  của bản thảo cuối (`proposal.md` cần bổ sung đoạn tương ứng — chưa làm). Việc kiểm chứng byte-by-byte
-  tokenizer `facebook/Meta-SecAlign-8B` vs `data/` (setup.py) vẫn còn treo — nên làm trước khi N thật
-  chạy xong, không bắt buộc trước khi bắt đầu chạy.
+  2 lớp (code + mẫu thật), không cần chờ kết quả training. Chỉ còn **2/3 sai lệch thật** cần đưa vào
+  Limitations của bản thảo cuối (`proposal.md` cần bổ sung — chưa làm): (1) nguồn `injection_data`
+  tái dùng `clean_data`, (2) `sanitize_untrusted_input()` là cải tiến bảo mật ngoài phương pháp gốc.
+  Sai lệch #3 (tokenizer) đã verify và đóng — không phải rủi ro thật, không cần ghi vào Limitations.
 
 ---
 

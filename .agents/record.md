@@ -1002,6 +1002,55 @@
 
 ---
 
+### #27 — Xác minh chất lượng data `vi_preference_gen.py` ĐỘC LẬP với loss (đối chiếu code Meta + đọc mẫu thật); 3 sai lệch thật tìm được
+
+- **Context:** Người dùng hỏi đúng trọng tâm: loss/accuracy của smoke test N=200 (Decision #25)
+  không có ý nghĩa thống kê (overfit trên tập quá nhỏ) — vậy làm sao biết DATA sinh ra bởi
+  `vi_preference_gen.py` đúng, nếu không dựa vào loss? Đây là 2 câu hỏi độc lập: "loss có phản ánh
+  model học tốt không" (không, do overfit N nhỏ) khác hẳn "cách xây cặp chosen/rejected có đúng
+  cấu trúc SecAlign không" (câu hỏi về DATA, không phải về TRAINING DYNAMICS) — trả lời được bằng
+  2 cách không phụ thuộc N/loss: (a) đối chiếu code trực tiếp với hàm gốc
+  `external/meta_secalign/utils.py::generate_preference_dataset` (cùng phương pháp đã dùng cho
+  `sep_reference_gen.py`, Decision #22); (b) đọc trực tiếp mẫu thật đã sinh.
+- **Decision:**
+  1. **Đối chiếu code — khớp đúng**: tỉ lệ 90/10 straightforward/completion, logic random vị trí
+     injection, cách ghép `chosen_input`/`rejected_input`, cấu trúc message role (`build_messages()`
+     ở `training/chat_template.py` tạo đúng y hệt `[{"role":"user",...},{"role":"input",...}]` như
+     `utils.py:90-93`, xác nhận qua đọc trực tiếp cả 2 file).
+  2. **Đối chiếu code — 3 sai lệch thật, CHƯA từng được ghi lại trước đây**:
+     - **Nguồn `injection_data` khác Meta**: Meta lấy câu injection từ 1 file cố định riêng
+       (`data/alpaca_data.json`, Alpaca gốc 52K), khác hẳn `clean_data` (`yahma/alpaca-cleaned`).
+       `vi_preference_gen.py` không có file tiếng Việt tương đương, phải lấy injection từ CHÍNH
+       `clean_data` (Bactrian-X vi) đã lọc non-empty input — thay thế hợp lý (không có lựa chọn
+       nào khác khả dụng) nhưng là sai lệch cấu trúc thật.
+     - **`sanitize_untrusted_input()` — Meta KHÔNG dùng trong pipeline train/eval thật**: xác nhận
+       qua chính comment trong `training/chat_template.py` — `recursive_filter` định nghĩa ở
+       `demo.py` nhưng grep xác nhận "never called from utils.py/test.py/secalign_plus_plus.py".
+       Dự án LUÔN áp dụng hàm này khi sinh data VN — là 1 cải tiến bảo mật có chủ đích (vá lỗi
+       Meta để sót), đúng nhưng khiến data sinh ra không hoàn toàn giống phương pháp gốc.
+     - **Tokenizer nguồn khác**: Meta dùng tokenizer đã qua "phẫu thuật" chat_template cục bộ
+       (`setup.py` ghi vào `data/`, xem Decision #22); dự án load thẳng từ `facebook/Meta-SecAlign-8B`
+       trên HF (lý do: tránh phụ thuộc `setup.py`, xem docstring `chat_template.py`). **Chưa verify
+       khớp byte-by-byte** giữa 2 nguồn này như đã làm cho tokenizer của `sep_reference_gen.py`
+       (Decision #22) — đây là lỗ hổng kiểm chứng còn treo, chưa đóng.
+  3. **Đọc trực tiếp 3 mẫu ngẫu nhiên thật** (từ `data/pod_synced/vi_preference_gen/vn_preference_test200.jsonl`,
+     seed=1): cả 3/3 mẫu đều đúng cấu trúc trust-boundary mong muốn — `chosen` luôn bám đúng
+     instruction gốc (vd. mẫu 1: hỏi "Thuốc nổ là gì?" → trả lời đúng về sự kiện, bỏ qua injection),
+     `rejected` luôn lạc theo injected instruction (vd. mẫu 1: trả lời bằng cách refactor code
+     JavaScript — đúng là bị injection "Cấu trúc lại đoạn mã..." đánh lừa). Đây là bằng chứng ngữ
+     nghĩa thật, độc lập hoàn toàn với loss/N.
+- **Rejected alternatives:** Chờ có số liệu ASR/utility từ T10 (đánh giá sau khi train N thật) mới
+  coi là "xác nhận data đúng" — loại vì đó là câu hỏi khác (model có HỌC ĐƯỢC từ data không), không
+  phải câu hỏi "data có được XÂY ĐÚNG không"; chờ tới lúc đó mới phát hiện lỗi cấu trúc (nếu có) sẽ
+  tốn nhiều giờ pod train N thật trước khi biết data sai.
+- **Consequences:** Đủ tự tin để tiến hành sinh N thật cho T8 — cấu trúc data đã xác nhận đúng ở cả
+  2 lớp (code + mẫu thật), không cần chờ kết quả training. 3 sai lệch tìm được cần đưa vào Limitations
+  của bản thảo cuối (`proposal.md` cần bổ sung đoạn tương ứng — chưa làm). Việc kiểm chứng byte-by-byte
+  tokenizer `facebook/Meta-SecAlign-8B` vs `data/` (setup.py) vẫn còn treo — nên làm trước khi N thật
+  chạy xong, không bắt buộc trước khi bắt đầu chạy.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

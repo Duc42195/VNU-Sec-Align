@@ -30,11 +30,14 @@ ANCHOR_HYPERPARAMS = {
     "epochs": 3,
     "rpo_alpha": 0.5,
     "label_smoothing": 0.1,
-    # yaml:78,80 -- effective batch 32. HF Trainer's own default (8, no grad accum) OOMs a single
-    # 24GB-class GPU on an 8B model at MAX_LENGTH=2048 (confirmed: real OOM on the pod, DPO's
-    # concatenated chosen+rejected forward pass, lm_head logits over the full 128256 vocab).
-    "per_device_train_batch_size": 2,
-    "gradient_accumulation_steps": 16,
+    # yaml:78,80 says batch_size=2/grad_accum=16 (effective 32), but DPOTrainer's per-peft-adapter
+    # reference-log-prob pass (compute_ref_log_probs, disables the LoRA adapter and does a SECOND
+    # forward pass on the same base model) adds on top of the policy forward+backward already in
+    # flight -- confirmed by real OOM on the pod even at batch_size=2 (23.50/23.56 GiB used, failed
+    # inside that ref pass specifically, not the policy pass). Halved again to batch_size=1 to keep
+    # a real margin; grad_accum doubled to 32 to hold the same effective batch of 32.
+    "per_device_train_batch_size": 1,
+    "gradient_accumulation_steps": 32,
 }
 
 # q_proj/v_proj are literal from helpers/llama3.1_8B_lora.yaml:25. gate_proj/up_proj/down_proj are

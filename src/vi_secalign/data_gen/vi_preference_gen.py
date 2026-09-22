@@ -85,11 +85,19 @@ def generate_vi_preference_dataset(
     seed: int = 42,
     checkpoint_every: int = 500,
     upload_every_checkpoint: bool = True,
+    max_model_len: int = 12288,
 ):
     """n_samples caps how many rows are drawn from the corpus BEFORE vLLM generation -- each row
     costs 2 generations (chosen+rejected) at up to max_tokens=8192, so this is the main lever on
     wall-clock/$ cost for T8. None = full corpus (~67K rows, ~134K generations -- NOT recommended,
     far beyond the T8 budget; only use None once a smaller run's throughput justifies scaling up).
+
+    max_model_len must be set explicitly: Llama-3.1's native context (131072, RoPE-extended) makes
+    vLLM try to reserve ~16GB of KV cache by default, which doesn't fit a single rented GPU's
+    remaining VRAM after model weights (hit on-pod, 2026-09-22: "16.00 GiB KV cache is needed...
+    available (4.94 GiB)"). 12288 covers max_tokens=8192 output plus ~4K tokens of prompt, well
+    within budget (the error's own estimate: up to 40464 is feasible on this GPU at the time it
+    was measured) -- raise if a longer corpus/injection later needs more headroom.
 
     checkpoint_every controls how many samples are generated per vLLM `llm.chat()` call before
     flushing to `preference_data_path` -- see module docstring's "Resumability" section. Smaller
@@ -175,7 +183,12 @@ def generate_vi_preference_dataset(
                 )
             print(f"Resuming: {len(completed)}/{len(preference_data)} pairs already done in {preference_data_path}")
 
-        llm = LLM(model=model_name_or_path, tensor_parallel_size=torch.cuda.device_count(), trust_remote_code=True)
+        llm = LLM(
+            model=model_name_or_path,
+            tensor_parallel_size=torch.cuda.device_count(),
+            trust_remote_code=True,
+            max_model_len=max_model_len,
+        )
         sampling_params = SamplingParams(temperature=0.8, max_tokens=8192, stop=tokenizer.eos_token)
 
         # Throughput/ETA instrumentation (2026-09-22, Decision #21): the real N for T9's EN:VN ratio
@@ -255,6 +268,13 @@ def main() -> None:
         "default -- the whole point of checkpointing is surviving the pod's 24h rental cap, which "
         "only works if progress leaves the pod, see .agents/record.md Decision #21.",
     )
+    parser.add_argument(
+        "--max_model_len", type=int, default=12288,
+        help="vLLM max_model_len (prompt+completion budget). Must be set explicitly for "
+        "Llama-3.1-family models -- their auto-detected 131072 context needs ~16GB KV cache, which "
+        "doesn't fit a single rented GPU's remaining VRAM after model weights (hit on-pod, "
+        "2026-09-22). Lower if this still OOMs; raise only if prompts+8192 output need more room.",
+    )
     args = parser.parse_args()
     n_samples = args.n_samples if args.n_samples else None
 
@@ -269,6 +289,7 @@ def main() -> None:
         seed=args.seed,
         checkpoint_every=args.checkpoint_every,
         upload_every_checkpoint=args.upload_every_checkpoint,
+        max_model_len=args.max_model_len,
     )
     print(f"Generated {len(dataset)} Vietnamese preference pairs -> {args.preference_data_path}")
 

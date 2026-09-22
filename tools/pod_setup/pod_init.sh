@@ -30,7 +30,7 @@ REPO_URL="https://github.com/Duc42195/VNU-Sec-Align.git"
 REPO_BRANCH="main"   # KHÔNG phải "clean-main" -- đó chỉ là tên nhánh cục bộ trên laptop
 # ===========================================================
 
-echo "=== [1/6] Kiểm tra công cụ cơ bản (pod có thể là Ubuntu trần, không có gì cả) ==="
+echo "=== [1/5] Kiểm tra công cụ cơ bản (pod có thể là Ubuntu trần, không có gì cả) ==="
 command -v git >/dev/null || (apt-get update -qq && apt-get install -y -qq git)
 command -v python3 >/dev/null || (apt-get update -qq && apt-get install -y -qq python3 python3-pip python3-venv)
 command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -39,7 +39,7 @@ python3 --version
 nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
 df -h / | tail -1
 
-echo "=== [2/6] Clone/pull repo (nhánh $REPO_BRANCH) ==="
+echo "=== [2/5] Clone/pull repo (nhánh $REPO_BRANCH) ==="
 if [ -d ~/repo/.git ]; then
   cd ~/repo && git pull --quiet
 else
@@ -49,17 +49,29 @@ fi
 git checkout --quiet "$REPO_BRANCH"
 git submodule update --init --quiet
 
-echo "=== [3/6] Tạo venv (Python 3.13, khớp build_env_cache.sh) + tải cache từ HF ==="
+echo "=== [3/5] Tạo venv (Python 3.13, khớp build_env_cache.sh) + tải cache từ HF ==="
 uv venv ~/venv --python 3.13
 source ~/venv/bin/activate
 uv pip install huggingface_hub   # nhỏ, tải thẳng từ PyPI cũng nhanh -- chỉ cần để tải tarball cache
+
+# 2026-09-22: BẮT BUỘC có HF_TOKEN từ đây, không phải chỉ ở bước [5/5] cũ như trước -- repo cache
+# ($HF_REPO_ID) là PRIVATE (build_env_cache.sh: HF_PRIVATE=true), nên tải nó cũng cần đăng nhập,
+# không chỉ tải model gated sau này. Thứ tự cũ (login ở bước 5, sau khi đã tải cache ở bước 3) sai
+# -- lỗi thật gặp phải (2026-09-22): 401 RepositoryNotFoundError khi tải cache vì chưa có token.
+if [ -z "${HF_TOKEN:-}" ]; then
+  echo "LỖI: chưa có HF_TOKEN trong biến môi trường -- repo cache là private, không tải được."
+  echo "Chạy: export HF_TOKEN=hf_xxx   (token có quyền read, đã accept license Llama-3/Llama-3.1)"
+  echo "Rồi chạy lại toàn bộ script (git pull/venv tạo lại rất nhanh, không lãng phí gì đáng kể)."
+  exit 1
+fi
+python3 -c "from huggingface_hub import login; login(token='$HF_TOKEN')"
 
 CACHE_DIR=~/env_cache
 mkdir -p "$CACHE_DIR"
 python3 -c "
 from huggingface_hub import hf_hub_download
 p = hf_hub_download(repo_id='$HF_REPO_ID', filename='vnu_secalign_env_cache.tar.gz',
-                     repo_type='dataset', local_dir='$CACHE_DIR')
+                     repo_type='dataset', local_dir='$CACHE_DIR', token='$HF_TOKEN')
 print('downloaded:', p)
 "
 tar -xzf "$CACHE_DIR/vnu_secalign_env_cache.tar.gz" -C "$CACHE_DIR"
@@ -78,7 +90,7 @@ print('transformers', transformers.__version__)
 print('vllm', vllm.__version__)
 "
 
-echo "=== [4/6] Chép data nhỏ (SEP/CyberSecEval2/InjecAgent/...) vào đúng chỗ setup.py cũ trỏ tới ==="
+echo "=== [4/5] Chép data nhỏ (SEP/CyberSecEval2/InjecAgent/...) vào đúng chỗ setup.py cũ trỏ tới ==="
 cp -r "$CACHE_DIR/meta_secalign_data/." ~/repo/external/meta_secalign/data/
 # Sinh data/CySE_prompt_injections.json từ prompt_injection.json đã có sẵn trong cache (CPU
 # thuần, không cần mạng) -- cần cho run_cyberseceval2_pi_subtask() ở meta_eval_runner.py
@@ -86,16 +98,8 @@ cp -r "$CACHE_DIR/meta_secalign_data/." ~/repo/external/meta_secalign/data/
 # model/data thô -- xem docstring tools/pod_setup/fetch_meta_secalign_data_urls.py).
 python3 ~/repo/tools/pod_setup/fetch_meta_secalign_data_urls.py
 
-echo "=== [5/6] Đăng nhập HF để tải model gated (Llama-3.1-8B-Instruct, Meta-SecAlign-8B) ==="
-if [ -z "${HF_TOKEN:-}" ]; then
-  echo "CHƯA có HF_TOKEN trong biến môi trường."
-  echo "Chạy: export HF_TOKEN=hf_xxx   (token có quyền read, đã accept license Llama-3.1)"
-  echo "Sau đó tự chạy tiếp bước 6 (tải model) theo nhu cầu, không tự động ở đây."
-else
-  python3 -c "from huggingface_hub import login; login(token='$HF_TOKEN')"
-fi
-
-echo "=== [6/6] (Tuỳ chọn) Tải sẵn 4 model — chạy tay dòng nào cần ==="
+echo "=== [5/5] (Tuỳ chọn) Tải sẵn 4 model — chạy tay dòng nào cần ==="
+# Đã login HF ở bước [3/5] (cần sớm hơn để tải chính cache riêng tư) -- không cần login lại ở đây.
 # Lưu ý disk thật (2026-09-22, xem .agents/infra_handoff.md): pod ckey.vn đang thuê chỉ có
 # ~73GB tổng / ~50GB trống, KHÔNG phải 100GB. Đủ cho model 8B (kể cả giữ 2 bản 4-bit cùng lúc)
 # nhưng KHÔNG đủ cho 70B (~140GB fp16, ~35-40GB dù 4-bit) -- 70B để dành pod khác lớn hơn, GĐ6.

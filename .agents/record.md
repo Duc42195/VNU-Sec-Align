@@ -865,6 +865,36 @@
      dùng, đã ghi sẵn trong docstring `train_dpo.py`): QLoRA 4-bit — nếu buộc phải dùng, đây MỚI
      thực sự là khác biệt không giữ được (Meta dùng bf16 full-precision LoRA, không lượng tử hoá),
      cần ghi rõ nếu xảy ra.
+  4. **Bổ sung 2026-09-23 — vì sao (b)/(c) khác hẳn về BẢN CHẤT rủi ro, không chỉ khác mức độ**:
+     người dùng hỏi tiếp "nếu buộc phải giảm `max_length`/thêm QLoRA thì giá trị bài nghiên cứu thế
+     nào" — cần phân biệt rõ 2 nhóm "không giữ được" trong mục 3, vì chúng KHÔNG cùng loại rủi ro:
+     - **Giảm `max_length`/`max_prompt_length` xuống dưới anchor (384/2048)**: rủi ro không phải chỉ
+       "giảm năng lực" — Meta tự báo cáo 99.9% preference set của họ đã ≤384 token (`proposal.md`
+       mục 1.2), tức 384 đã là ngưỡng sát, không dư dả. Giảm thêm có nguy cơ **cắt đứt đúng phần
+       injected instruction hoặc trusted instruction** (vị trí injection ngẫu nhiên đầu/cuối,
+       `randomized_injection_position`) — làm sai NGỮ NGHĨA của cặp chosen/rejected, không chỉ mất
+       ngữ cảnh trung tính. Đây là lỗi có thể **âm thầm làm sai nhãn dữ liệu train**, phải đo trước
+       khi dùng (cùng nguyên tắc "không giả định, phải đo" của Decision #21 cho tỉ lệ EN:VN).
+     - **Thêm QLoRA 4-bit**: KHÔNG tương đương toán học như vụ gradient-accumulation ở mục 2 —
+       lượng tử hoá đưa nhiễu số học thật vào forward pass của base model đóng băng, ảnh hưởng
+       gradient qua LoRA adapter. Literature gốc (QLoRA, Dettmers et al. 2023) cho thấy gần bằng
+       nhưng KHÔNG bằng full-precision LoRA — chênh lệch thường nhỏ nhưng có thật, thay đổi theo
+       task, không phải 0 tuyệt đối.
+     - **Hệ quả tới giá trị nghiên cứu nếu buộc dùng 1 trong 2**: mọi kết luận RQ2/RQ3 dựa trên so
+       sánh checkpoint tự train với `Meta-SecAlign-8B` công bố (T14) — nếu dùng, chênh lệch ASR tìm
+       được **không còn tách được** là do dữ liệu EN/VN thật khác nhau (điều đang muốn đo) hay chỉ là
+       artifact của điều kiện train kém trung thực hơn — cùng loại confound đã bắt lỗi nhiều lần
+       trong dự án (SeaLLM control, tỉ lệ EN:VN). Đây là chi phí thật, không nhỏ, nhưng **không chí
+       mạng** nếu: (i) công bố tường minh trong Limitations, không dùng ngầm; (ii) chỉ dùng khi thật
+       sự hết cách khác — đúng thứ tự ưu tiên đã có (QLoRA là lựa chọn CUỐI, sau khi giảm
+       `max_seq_len`, mà thực tế `batch_size=1+grad_accum=32` đã giải quyết OOM mà chưa cần tới cả
+       hai); (iii) nếu buộc phải dùng, nên chạy 1 calibration nhỏ (vài chục mẫu, so full-precision vs
+       QLoRA hoặc full vs giảm `max_length`) để định lượng phần chênh lệch do điều kiện train, biến
+       "confound không đo được" thành "confound đã đo và trừ đi được" — cùng cách Decision #21 xử lý
+       câu hỏi downsample EN. Đóng góp chính của dự án (RQ1 cross-lingual, domain-incremental mới —
+       Decision #20, ablation DPO+RPO+cDPO — Decision #3/#5) không phải là claim về độ trung thực
+       phần cứng, nên việc này chỉ thêm 1 giới hạn cần công bố (phù hợp mức venue Q2-Q3 đã đặt kỳ
+       vọng, Decision #10), không làm sụp đổ giá trị bài báo — miễn là công bố trung thực.
 - **Rejected alternatives:** Cố giữ `batch_size=2` như Meta bằng cách giảm `max_seq_len`/dùng QLoRA
   ngay từ đầu để né OOM — loại, vì `batch_size=1 + grad_accum=32` đã giải quyết OOM mà KHÔNG cần
   đánh đổi thêm (giữ nguyên full-precision bf16 và max_seq_len=2048), nên chưa có lý do dùng biện
@@ -872,7 +902,9 @@
 - **Consequences:** Không cần sửa code thêm (các giá trị này đã đúng trong `ANCHOR_HYPERPARAMS`/
   `dpo_config.py` từ trước, xem Decision #23) — entry này chỉ tường minh hoá LÝ DO và PHÂN LOẠI rõ
   ràng để trích dẫn đúng khi viết Limitations của bản thảo cuối, tránh người đọc hiểu nhầm khác biệt
-  hardware là khác biệt phương pháp. `proposal.md` cần thêm đoạn Limitations tương ứng.
+  hardware là khác biệt phương pháp. Nếu tương lai buộc phải dùng QLoRA/giảm `max_length`, PHẢI chạy
+  calibration nhỏ trước (mục 4) và công bố tường minh trong Limitations — không dùng ngầm rồi diễn
+  giải kết quả như thể hyperparameter giống hệt Meta. `proposal.md` mục 3.1 đã cập nhật đoạn tương ứng.
 
 ---
 
@@ -915,6 +947,58 @@
   khảo giá A100 40GB/A6000 48GB/RTX 5090 32GB) hơn là giữ nguyên sai lệch này cho kết quả chính thức.
   Chưa thêm `logging_steps` nhỏ cho lần chạy thật (lần này chỉ có 2 điểm log vì tổng step ít) — cần
   thêm nếu muốn theo dõi đường loss chi tiết hơn khi N lớn.
+
+---
+
+### #26 — Xoá pod 3090; quyết định thuê GPU ≥32GB Ampere+ (dự kiến RTX 5090 32GB) cho N thật; công thức so sánh chi phí GPU
+
+- **Context:** Sau Decision #25, người dùng đi khảo giá GPU khác trên ckey.vn để chạy N thật cho
+  T9 (đúng `max_length=2048`, không dùng 1536 như smoke test). Ban đầu tôi ước tính "1×RTX 3090 đủ"
+  dựa trên tính toán lý thuyết (chưa verify) — **sai**, xác nhận qua 4 lần OOM thật liên tiếp tối
+  2026-09-22 dù đã batch_size=1/max_length=1536/gradient checkpointing đúng/precompute_ref_log_probs.
+  Đã xem xét 3 listing cụ thể:
+  1. **Tesla V100 32GB** (26.483 VND/giờ) — VRAM đủ, nhưng kiến trúc **Volta, Compute Capability
+     7.0** — không có bf16 tensor core (chỉ có từ Ampere/CC 8.0). Code dùng `dtype=torch.bfloat16`
+     xuyên suốt → chạy được nhưng không tăng tốc phần cứng, có thể chậm hơn cả 3090 dù VRAM to hơn.
+  2. **Quadro RTX 8000 45GB** (13.494 VND/giờ, RAM 47GB, CPU Xeon 10 nhân — tất cả đều tốt) — cùng
+     vấn đề: **Turing, CC 7.5** — cũng không có bf16 tensor core (Turing chỉ mạnh FP16/INT8 tensor
+     core). VRAM/RAM/CPU không cứu được nếu kiến trúc không hỗ trợ đúng dtype code đang dùng.
+  3. **RTX 5090 32GB** (21.644 VND/giờ, đã gồm disk; nhưng 1 listing cụ thể chỉ có CPU i3-7100T
+     yếu + RAM 16GB) — kiến trúc Blackwell, CC mới, có bf16 tensor core đầy đủ. VRAM 32GB đủ dư
+     (~13GB activation headroom sau baseline ~19GB model+LoRA+optimizer) để chạy `max_length=2048`
+     không cần lách. RAM 16GB ban đầu là rủi ro thật (model 8B bf16 ~15GB nạp vào CPU RAM trước khi
+     chuyển GPU nếu không có `device_map`) — đã vá bằng `device_map="auto"` (commit `c0cb54d`), nạp
+     thẳng từng shard vào VRAM, không cần đủ RAM hệ thống giữ bản đầy đủ model nữa.
+  - **Công thức chi phí đã dùng để so sánh** (áp dụng số liệu thật của 3090 + giá thuê thật người
+    dùng cung cấp):
+    ```
+    Chi phí = giá/giờ × thời gian; thời gian ≈ (N/effective_batch × epochs) × giây/step
+    GPU_B đáng hơn GPU_A  ⟺  (giá_B/giá_A) < (thời_gian_A/thời_gian_B)
+    ```
+    Với giá thật (3090 = 6.541 VND/giờ, 5090 listing = 21.644 VND/giờ) và ước lượng tốc độ 5090
+    nhanh hơn 2.5-3x (suy đoán từ specs công bố, **chưa đo thật**): tỉ lệ giá ≈3.31 > ngưỡng hoà vốn
+    ≈2.5-3.03 → **xét thuần chi phí cho 1 lần chạy N=10K, 3090 rẻ hơn** (~65.410đ vs ~71-87k đ).
+    NHƯNG: baseline "10 giờ" của 3090 chỉ đúng cho cấu hình **đã sai lệch** (`max_length=1536`) —
+    người dùng chỉ ra đúng điểm này: 3090 không có lựa chọn "vừa rẻ vừa đúng `max_length=2048`"
+    (chỉ đạt 2048 bằng cách thêm QLoRA — 1 sai lệch phương pháp luận khác, Meta dùng bf16 full-
+    precision không lượng tử hoá). Nên phép so sánh thuần $ ở trên không áp dụng được cho job đúng
+    chuẩn — đây mới là lý do quyết định thật sự, không phải vì 5090 rẻ hơn.
+- **Decision:** Người dùng chốt thuê GPU ≥32GB VRAM, Compute Capability ≥8.0 (dự kiến RTX 5090
+  32GB, máy cụ thể chưa chốt) — ưu tiên **giữ đúng `max_length=2048` không đánh đổi thêm**, chấp
+  nhận chi phí/giờ cao hơn 3090. Đã xoá pod 3090 cũ (2026-09-22). Trước khi thuê dài cho N thật:
+  bắt buộc chạy lại đúng smoke-test 200 mẫu trên máy mới để đo `giây/step` thật, thay số ước lượng
+  2.5-3x bằng số đo thật, áp lại công thức trên.
+- **Rejected alternatives:** (a) Giữ 3090 + `max_length=1536` vì rẻ nhất — loại vì đây là sai lệch
+  phương pháp luận không cần thiết, có lựa chọn tốt hơn (5090) không cần đánh đổi. (b) V100 32GB
+  hoặc RTX 8000 45GB (rẻ hơn 5090, VRAM đủ/dư) — loại cả hai vì thiếu bf16 tensor core (Turing/
+  Volta, CC <8.0), rủi ro chậm hơn cả 3090 dù giá rẻ và VRAM to — không đáng đánh đổi tốc độ để
+  tiết kiệm vài nghìn đồng/giờ. (c) 3090 + QLoRA 4-bit để đạt `max_length=2048` — loại vì đây LÀ
+  1 sai lệch phương pháp luận khác (lượng tử hoá, Meta không dùng), không rẻ hơn đáng kể so với
+  thuê 5090 đúng chuẩn ngay từ đầu.
+- **Consequences:** Pod 3090 cũ không còn dùng được — `infra_handoff.md` đã viết lại toàn bộ, xoá
+  thông tin SSH/setup cũ (không còn hiệu lực), thêm tiêu chí chọn máy mới (Ampere+/VRAM≥32GB) và
+  danh sách việc cần làm lại từ đầu trên pod mới. Toàn bộ code/kết quả quan trọng đã ở git+HF, không
+  mất gì khi xoá pod — đúng đúng mục đích thiết kế resumability (Decision #21).
 
 ---
 

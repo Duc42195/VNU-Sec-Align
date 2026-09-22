@@ -247,6 +247,22 @@ xác chưa xác minh lại được.
      không phải sai lệch phương pháp. Dự phòng nếu vẫn OOM (chưa cần dùng): QLoRA 4-bit — nếu phải
      dùng, đây MỚI là khác biệt thật so với Meta (họ dùng bf16 full-precision, không lượng tử hoá),
      cần ghi rõ nếu xảy ra.
+  4. **Vì sao giảm `max_length` và thêm QLoRA khác nhau về BẢN CHẤT rủi ro, không chỉ khác mức độ**:
+     giảm `max_prompt_length` xuống dưới 384 (Meta tự báo cáo 99.9% dữ liệu của họ đã ≤384 token —
+     mục 1.2 — tức đây đã là ngưỡng sát, không dư dả) có nguy cơ **cắt đứt đúng phần injected/trusted
+     instruction** (vị trí injection ngẫu nhiên đầu/cuối) — làm sai ngữ nghĩa cặp chosen/rejected,
+     không chỉ mất ngữ cảnh trung tính; QLoRA thì không tương đương toán học như vụ gradient-
+     accumulation ở mục 2 — đưa nhiễu số học thật vào forward pass, gây chênh lệch hiệu năng có thật
+     (dù thường nhỏ, theo literature QLoRA gốc) so với full-precision LoRA của Meta. Nếu buộc dùng 1
+     trong 2: chênh lệch ASR so với `Meta-SecAlign-8B` (T14) sẽ không còn tách được là do dữ liệu
+     EN/VN khác nhau (điều đang muốn đo) hay do điều kiện train kém trung thực hơn — chi phí thật cho
+     RQ2/RQ3, nhưng không chí mạng nếu: (i) công bố tường minh trong Limitations; (ii) chỉ dùng khi
+     hết cách khác (QLoRA là lựa chọn cuối, `batch_size=1+grad_accum=32` đã né được OOM mà chưa cần);
+     (iii) nếu buộc dùng, chạy 1 calibration nhỏ (vài chục mẫu, full-precision vs QLoRA / full vs
+     giảm `max_length`) để định lượng phần chênh lệch, thay vì để nó lẫn không đo được vào kết quả
+     chính. Đóng góp chính của dự án (RQ1 cross-lingual, domain-incremental, ablation DPO+RPO+cDPO)
+     không phải là claim về độ trung thực phần cứng — việc này chỉ thêm 1 giới hạn cần công bố (phù
+     hợp mức venue Q2-Q3 đã đặt kỳ vọng), không làm sụp đổ giá trị bài báo nếu công bố trung thực.
 - Kết quả thực nghiệm so sánh trực tiếp với checkpoint công khai `Meta-SecAlign-8B` ở cùng quy mô
   8B (không suy diễn từ số liệu 70B).
 - Taxonomy 10 vector tấn công với train/held-out tách bạch, quy trình chống leakage.

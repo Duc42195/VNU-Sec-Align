@@ -73,6 +73,13 @@ def train(
     # does not fit the same pod GPU that vi_preference_gen.py's vLLM call needed max_model_len
     # capping for (see that script's fix, same 24GB-class card).
     model = AutoModelForCausalLM.from_pretrained(base_model, dtype=torch.bfloat16)
+    # Required for gradient checkpointing to actually save activation memory through a frozen base
+    # model + LoRA adapter -- without this, the checkpointed layers' inputs have requires_grad=False
+    # (base model is frozen), so torch.utils.checkpoint can't build a backward graph through them and
+    # silently keeps full activations anyway (confirmed: real OOM on the pod at batch_size=1, with
+    # the exact "None of the inputs have requires_grad=True" warning that flags this known PEFT +
+    # gradient-checkpointing gotcha). This hooks the input embeddings' output to force requires_grad.
+    model.enable_input_require_grads()
     dataset = load_dataset("json", data_files=preference_data_path, split="train")
 
     lora_config = build_lora_config(target=lora_target)

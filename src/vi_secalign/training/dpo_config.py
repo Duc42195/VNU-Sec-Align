@@ -104,4 +104,8 @@ def build_dpo_config(
         per_device_train_batch_size=ANCHOR_HYPERPARAMS["per_device_train_batch_size"],
         gradient_accumulation_steps=ANCHOR_HYPERPARAMS["gradient_accumulation_steps"],
         gradient_checkpointing=True,
+        # use_reentrant=False is HF's own recommended setting for PEFT + gradient checkpointing
+        # (paired with model.enable_input_require_grads() in train_dpo.py) -- the reentrant
+        # (default) variant is the one known to interact badly with frozen-base + LoRA setups.
+        gradient_checkpointing_kwargs={"use_reentrant": False},
     )

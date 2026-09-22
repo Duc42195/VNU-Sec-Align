@@ -13,13 +13,25 @@ that directory (e.g. 'data/...', 'lm_eval_config').
 from __future__ import annotations
 
 import subprocess
+import time
 from pathlib import Path
 
 from vi_secalign.config import EXTERNAL_ROOT
 
 
 def _run(cmd: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, cwd=EXTERNAL_ROOT, check=True, capture_output=True, text=True)
+    # Timing instrumentation (2026-09-22): capture_output hides test.py's own live progress, so
+    # without this, a long T1-T3 run prints nothing until it's fully done. Print elapsed time +
+    # the captured stdout/stderr tail afterward so a pasted log (see results/pod_logs/) still
+    # carries throughput/identification info, not just the final result.
+    t0 = time.time()
+    print(f"[meta_eval_runner] running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, cwd=EXTERNAL_ROOT, check=True, capture_output=True, text=True)
+    elapsed = time.time() - t0
+    print(f"[meta_eval_runner] done in {elapsed:.1f}s ({elapsed / 60:.1f} min): {' '.join(cmd)}")
+    if result.stdout:
+        print(result.stdout[-4000:])  # tail only -- test.py's own output can be long
+    return result
 
 
 def run_alpacafarm(model_name_or_path: str, attack: str, defense: str = "none") -> subprocess.CompletedProcess:

@@ -29,11 +29,24 @@ Needs a GPU (vLLM self-generation) -- not run in this pass, this environment has
 mean ~134K generations (chosen+rejected), far beyond the "2 ngày" T8 budget. Default 2000 is a
 starting point, not a validated final size -- see docstring on n_samples below: measure real
 throughput on the rented pod on a small run first, then decide whether to scale up.
+
+Resumability (ckey.vn pod hard-caps rentals at 24h -- see .agents/infra_handoff.md, Decision #21):
+generation runs in chunks of `checkpoint_every` samples (default 500), flushing completed pairs to
+`preference_data_path` after every chunk instead of one giant vLLM call at the end. On restart, if
+`preference_data_path` already has N completed pairs, the first N (prompt-)samples of the
+deterministic seeded order are skipped -- their prompts don't need to be regenerated, only the
+still-missing tail is sent to vLLM. This is safe because prompt construction (everything before the
+`llm.chat()` call) is pure CPU and fully determined by `seed`/`n_samples`/`corpus_hf_id` -- rerunning
+it from scratch each time is cheap and always reproduces the same ordering. Operational flow: before
+the pod's 24h limit, upload `preference_data_path` to HF (tools/hf_upload/*.py); on the next pod,
+download it back to the same local path before re-running this script with the same arguments.
 """
 
 from __future__ import annotations
 
 import argparse
+import os
+import time
 from copy import deepcopy
 
 import numpy as np
@@ -69,11 +82,17 @@ def generate_vi_preference_dataset(
     randomized_injection_position: bool = True,
     n_samples: int | None = 2000,
     seed: int = 42,
+    checkpoint_every: int = 500,
 ):
     """n_samples caps how many rows are drawn from the corpus BEFORE vLLM generation -- each row
     costs 2 generations (chosen+rejected) at up to max_tokens=8192, so this is the main lever on
     wall-clock/$ cost for T8. None = full corpus (~67K rows, ~134K generations -- NOT recommended,
     far beyond the T8 budget; only use None once a smaller run's throughput justifies scaling up).
+
+    checkpoint_every controls how many samples are generated per vLLM `llm.chat()` call before
+    flushing to `preference_data_path` -- see module docstring's "Resumability" section. Smaller
+    values checkpoint more often (safer against an unexpected pod stop) at a small throughput cost
+    (vLLM batches less per call); 500 is a reasonable default, not a validated optimum.
     """
     import torch  # deferred: heavy dependency
     from vllm import LLM, SamplingParams  # deferred: heavy dependency
@@ -131,19 +150,63 @@ def generate_vi_preference_dataset(
             )
 
     if self_generated_response:
+        # Resume support: if a prior run already wrote N completed pairs, the first N entries of
+        # `preference_data` (deterministic given seed/n_samples/corpus) are the same N samples --
+        # skip regenerating them, only send the remaining tail to vLLM. See module docstring.
+        completed: list[dict] = []
+        if os.path.exists(preference_data_path):
+            completed = meta_bridge.jload(preference_data_path)
+            if len(completed) > len(preference_data):
+                raise ValueError(
+                    f"Existing {preference_data_path} has {len(completed)} pairs, more than the "
+                    f"{len(preference_data)} this call would produce -- likely different "
+                    "n_samples/seed/corpus args than the run that created it. Refusing to guess; "
+                    "pass matching args or a fresh preference_data_path."
+                )
+            print(f"Resuming: {len(completed)}/{len(preference_data)} pairs already done in {preference_data_path}")
+
         llm = LLM(model=model_name_or_path, tensor_parallel_size=torch.cuda.device_count(), trust_remote_code=True)
         sampling_params = SamplingParams(temperature=0.8, max_tokens=8192, stop=tokenizer.eos_token)
-        conversations = []
-        for sample in preference_data:
-            conversations.append([{"role": "user", "content": sample["chosen_input"]}])
-            conversations.append([{"role": "user", "content": sample["rejected_input"]}])
-        outputs = llm.chat(conversations, sampling_params)
-        for i, sample in enumerate(preference_data):
-            sample["chosen"] = outputs[2 * i].outputs[0].text + tokenizer.eos_token
-            sample["rejected"] = outputs[2 * i + 1].outputs[0].text + tokenizer.eos_token
-        del llm, sampling_params
 
-    meta_bridge.jdump(preference_data, preference_data_path)
+        # Throughput/ETA instrumentation (2026-09-22, Decision #21): the real N for T9's EN:VN ratio
+        # is deliberately NOT hard-coded yet -- it depends on the samples/sec measured here on the
+        # actual rented pod. Printed per-chunk (not just at the end) so a run interrupted by the 24h
+        # pod cap still leaves a usable throughput number in whatever log was captured up to that
+        # point, not only on a clean full completion.
+        run_start = time.time()
+        n_done_at_start = len(completed)
+        remaining = preference_data[len(completed):]
+        for chunk_start in range(0, len(remaining), checkpoint_every):
+            chunk = remaining[chunk_start : chunk_start + checkpoint_every]
+            chunk_t0 = time.time()
+            conversations = []
+            for sample in chunk:
+                conversations.append([{"role": "user", "content": sample["chosen_input"]}])
+                conversations.append([{"role": "user", "content": sample["rejected_input"]}])
+            outputs = llm.chat(conversations, sampling_params)
+            for i, sample in enumerate(chunk):
+                sample["chosen"] = outputs[2 * i].outputs[0].text + tokenizer.eos_token
+                sample["rejected"] = outputs[2 * i + 1].outputs[0].text + tokenizer.eos_token
+            completed.extend(chunk)
+            meta_bridge.jdump(completed, preference_data_path)  # full overwrite -- small N, safest against partial-JSON corruption
+
+            chunk_elapsed = time.time() - chunk_t0
+            chunk_samples_per_sec = len(chunk) / chunk_elapsed if chunk_elapsed > 0 else float("nan")
+            n_done_this_run = len(completed) - n_done_at_start
+            overall_elapsed = time.time() - run_start
+            overall_samples_per_sec = n_done_this_run / overall_elapsed if overall_elapsed > 0 else float("nan")
+            n_left = len(preference_data) - len(completed)
+            eta_seconds = n_left / overall_samples_per_sec if overall_samples_per_sec > 0 else float("nan")
+            print(
+                f"Checkpointed {len(completed)}/{len(preference_data)} -> {preference_data_path} | "
+                f"chunk: {len(chunk)} samples in {chunk_elapsed:.1f}s ({chunk_samples_per_sec:.3f} samples/s) | "
+                f"run avg: {overall_samples_per_sec:.3f} samples/s | "
+                f"ETA remaining {n_left} samples: {eta_seconds / 60:.1f} min"
+            )
+        del llm, sampling_params
+        preference_data = completed
+    else:
+        meta_bridge.jdump(preference_data, preference_data_path)
     from datasets import load_dataset
 
     dataset = load_dataset("json", data_files=preference_data_path, split="train")
@@ -162,6 +225,9 @@ def main() -> None:
     parser.add_argument("--n_samples", type=int, default=2000,
                          help="Cap on corpus rows used (None/0 = full ~67K corpus, NOT recommended for T8's budget).")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--checkpoint_every", type=int, default=500,
+                         help="Flush progress to --preference_data_path every N samples (resume support -- "
+                         "the rented pod has a 24h max rental, see .agents/infra_handoff.md).")
     args = parser.parse_args()
     n_samples = args.n_samples if args.n_samples else None
 
@@ -174,6 +240,7 @@ def main() -> None:
         randomized_injection_position=args.randomized_injection_position,
         n_samples=n_samples,
         seed=args.seed,
+        checkpoint_every=args.checkpoint_every,
     )
     print(f"Generated {len(dataset)} Vietnamese preference pairs -> {args.preference_data_path}")
 

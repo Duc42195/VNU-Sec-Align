@@ -16,6 +16,12 @@
   2 model base cùng lúc (chỉ giữ 1 trong 2: Llama-3.1-8B HOẶC SeaLLM tại 1 thời điểm).
 - Ngân sách: đã nạp 50.000 VND để test (≈6.5h ở giá ~7.700đ/h) — không phải để chạy train thật,
   chỉ đủ cho setup + T1-T3 formal sanity check.
+- **Giới hạn thuê tối đa 24h/lượt** (ckey.vn) — không thể thuê liên tục nhiều ngày trong 1 lượt.
+  Mọi việc tốn nhiều giờ (T8 sinh dữ liệu VN, T9/T9b train) PHẢI resumable qua ranh giới lượt thuê:
+  dừng trước 24h, lưu tiến độ, upload lên HF, thuê lượt mới, tải về, chạy tiếp. Đã vá code cho việc
+  này (xem `.agents/record.md` Decision #21): `vi_preference_gen.py` sinh theo chunk + tự resume từ
+  file output cũ; `train_dpo.py`/`dpo_config.py` có `--resume_from_checkpoint`/`save_steps`. Quy
+  trình upload/download thủ công dùng `tools/hf_upload/*.py`, chưa tự động hoá thành 1 script.
 
 ## Đã làm xong (trên máy thuê)
 

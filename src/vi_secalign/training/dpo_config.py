@@ -40,7 +40,13 @@ def build_lora_config(target: Literal["8b", "70b"] = "8b"):
     )
 
 
-def build_dpo_config(variant: DPOVariant, output_dir: str, learning_rate: float | None = None):
+def build_dpo_config(
+    variant: DPOVariant,
+    output_dir: str,
+    learning_rate: float | None = None,
+    save_steps: int = 200,
+    save_total_limit: int = 3,
+):
     """Build a trl.DPOConfig for one arm of the DPO vs DPO+RPO vs DPO+RPO+cDPO ablation.
 
     rpo_alpha and label_smoothing (cDPO) are two distinct, complementary mechanisms, not the same
@@ -61,6 +67,14 @@ def build_dpo_config(variant: DPOVariant, output_dir: str, learning_rate: float 
     variant="dpo" sets both to their neutral/off values (rpo_alpha=None, label_smoothing=0.0),
     i.e. plain DPO, matching both SecAlign and SecAlign++'s actual published method (neither paper
     uses RPO or cDPO — confirmed by reading both directly).
+
+    save_steps/save_total_limit exist because the rented pod (ckey.vn) has a hard 24h max rental —
+    a run must be interruptible mid-training without losing all progress. HF Trainer's
+    save_strategy="steps" already writes a full resumable checkpoint (model+optimizer+scheduler+
+    RNG state) to output_dir/checkpoint-<step>/ on this cadence; train_dpo.py's
+    --resume_from_checkpoint flag picks the latest one back up. save_total_limit caps how many are
+    kept on disk at once (each LoRA checkpoint is small, but the pod's disk is tight — see
+    .agents/infra_handoff.md). See .agents/record.md Decision #21.
     """
     from trl import DPOConfig  # deferred: real dependency
 
@@ -82,4 +96,7 @@ def build_dpo_config(variant: DPOVariant, output_dir: str, learning_rate: float 
         rpo_alpha=rpo_alpha,
         label_smoothing=label_smoothing,
         beta=0.1,  # both SecAlign papers use the DPO-default beta=0.1
+        save_strategy="steps",
+        save_steps=save_steps,
+        save_total_limit=save_total_limit,
     )

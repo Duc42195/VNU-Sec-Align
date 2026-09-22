@@ -659,6 +659,109 @@
 
 ---
 
+### #20 — Thêm nhánh "domain-incremental" (continue-train trên `meta_secalign_8b`) song song với T9/T10 joint-from-scratch; phát hiện mất cân bằng quy mô EN/VN mặc định
+
+- **Context:** Người dùng phản biện thiết kế T9/T10 hiện tại — train từ base sạch
+  `llama_3_1_8b_instruct` (chưa defense), gộp EN+VN trong 1 lượt DPO duy nhất — và đề xuất thay
+  bằng continue-train (domain-incremental) trực tiếp trên `meta_secalign_8b` (đã có defense EN
+  công bố), chỉ thêm dữ liệu VN. Rà lại code lúc trả lời phát hiện thêm 1 vấn đề độc lập:
+  `en_preference_gen.py` KHÔNG có cap (`instruct_dataset="alpaca"` mặc định lấy full ~52K của
+  Meta), trong khi `vi_preference_gen.py` mặc định `n_samples=2000` (Decision #19) — nếu T9 chạy
+  đúng theo default của cả 2 script, tỉ lệ mẫu sẽ là ~52K EN : ~2K VN (~26:1), không phải một lựa
+  chọn có chủ đích.
+- **Decision:**
+  1. **Giữ T9/T10 (joint-from-scratch, EN+VN gộp) làm nhánh chính** trả lời RQ2 — vì đây là cách
+     tái tạo đúng phương pháp gốc của SecAlign/SecAlign++ (luôn train LoRA từ base sạch, không có
+     khái niệm continue trên 1 LoRA đã train sẵn trong 2 paper gốc).
+  2. **Thêm nhánh mới — domain-incremental**: `T9b` continue-train adapter của `meta_secalign_8b`
+     (đã publish, EN-only defense) bằng RIÊNG dữ liệu VN từ T8 (không gộp thêm EN) → checkpoint mới;
+     `T10b` đánh giá lại **cả VN_ASR lẫn EN_ASR** sau incremental-train, so với baseline GĐ2 — đo
+     trực tiếp 2 hiệu ứng độc lập mà nhánh (1) không tách được: (a) mức tăng ích lợi khi thêm VN data
+     lên trên 1 defense đã có sẵn, (b) catastrophic forgetting của EN defense sau incremental-train.
+     Nhánh này **sạch hơn nhánh (1)** cho câu hỏi "VN data có giúp gì không" vì điểm xuất phát (EN
+     defense) chính là số liệu Meta đã công bố — không lẫn confound "pipeline tự viết (TRL) có tái
+     lập đúng lượt train EN gốc của Meta hay không" (vốn là lý do GĐ4/T11-14 phải tồn tại để hiệu
+     chỉnh riêng cho nhánh (1)).
+  3. **Domain-incremental là một đóng góp phương pháp luận riêng của dự án**, không chỉ là ablation
+     phụ — 2 paper gốc (SecAlign CCS'25, SecAlign++/Meta-SecAlign arXiv 2507.02735) không có bước
+     continual/incremental fine-tuning một defense đã công bố để mở rộng sang ngôn ngữ khác; áp dụng
+     continual learning cho đúng bài toán "mở rộng cross-lingual của 1 defense đã publish" là góc
+     chưa ai chạm ở 2 bài gốc. Cần nêu rõ trong phần đóng góp (Introduction/Contributions) của bản
+     thảo cuối, không chỉ trong phần Method.
+  4. **Cảnh báo mất cân bằng EN/VN cho T9**: trước khi chạy T9 (joint), phải quyết định tường minh
+     tỉ lệ EN:VN (vd. cap EN xuống khớp N của VN, hoặc upsample VN, hoặc chấp nhận lệch và ghi rõ là
+     giới hạn đã biết) — không để mặc định của 2 script tự quyết một tỉ lệ ~26:1 ngoài ý muốn.
+  5. **Sửa T22** (GĐ6, 6 ablation): đổi nhánh "EN vs EN+VN" thành 3 nhánh — EN-only (baseline gốc
+     Meta) / joint-from-scratch EN+VN (T9) / incremental-VN-only-trên-Meta-SecAlign (T9b) — để báo
+     cáo cuối phân biệt rõ 2 con đường đạt VN defense, không gộp chung 1 số.
+- **Rejected alternatives:** Thay thế hoàn toàn T9/T10 bằng T9b/T10b (bỏ joint-from-scratch) — loại,
+  vì joint-from-scratch vẫn cần thiết để trả lời RQ3 sau này (GĐ4 so sánh pipeline tự viết với
+  Meta) và là điểm neo cho nhánh "EN-only" trong T22; không nên bỏ chỉ vì có confound, mà nên thêm
+  nhánh sạch hơn bên cạnh.
+- **Consequences:** `plan.csv` thêm `T9b`/`T10b` (cùng sprint 28/09-04/10 với T9/T10, chạy song
+  song — cùng phụ thuộc T8 cho dữ liệu VN, T9b còn phụ thuộc T1 cho checkpoint `meta_secalign_8b`);
+  T22 sửa mô tả ablation; T9's Ghi chú thêm cảnh báo tỉ lệ EN:VN. `proposal.md` mục 3.1 thêm đoạn
+  giải thích 2 nhánh + đóng góp domain-incremental. Cả T9b/T10b chưa chạy (cùng cần GPU thật như
+  T9/T10) — chỉ mới ghi nhận thiết kế, chưa thực thi.
+
+---
+
+### #21 — Chốt N trung gian (đo throughput trước) cho tỉ lệ EN:VN; thêm ràng buộc pod ckey.vn giới hạn thuê tối đa 24h — cần resumability thật trong code
+
+- **Context:** Nối tiếp Decision #20 (cảnh báo tỉ lệ EN:VN mặc định ~26:1 nếu chạy `en_preference_gen.py`
+  full + `vi_preference_gen.py` mặc định 2000). Người dùng hỏi thêm: downsample EN có ảnh hưởng
+  không (hay tự ước lượng), và upsample VI có đơn giản là sửa tham số rồi chạy không. Đồng thời phát
+  hiện ràng buộc hạ tầng mới: **pod ckey.vn đang thuê giới hạn tối đa 24h/lượt**, không thể chạy
+  liên tục nhiều ngày như giả định ngầm trước đó khi ước lượng "2-3 ngày" cho T8/T9.
+- **Decision:**
+  1. **Không downsample EN xuống bằng VI (2000) mà không đo** — rủi ro thật, không phải giả định: ở
+     nhánh joint-from-scratch (T9), downsample EN có thể làm defense-EN học được yếu hơn bản Meta
+     công bố (~52K), gây confound mới cho T14 (so với `Meta-SecAlign-8B`) và cả RQ2 — không tách
+     được "yếu vì thiếu EN data" khỏi "yếu vì VN data không giúp gì". Nếu chọn downsample, phải chạy
+     1 ablation nhỏ riêng (EN@2K vs EN@full, chỉ đo EN_ASR/utility) để định lượng cái giá trước khi
+     dùng.
+  2. **Upsample VI đúng là chỉ cần đổi `--n_samples`** (đã tham số hoá sẵn, corpus Bactrian-X có
+     ~67K dòng, đủ để lấy N lớn hơn bằng SAMPLE THẬT KHÁC NHAU, không phải nhân bản lại — nhân bản
+     dòng cũ để "độn" cho đủ N sẽ khác hẳn về chất lượng, model chỉ học lặp lại cùng 1 tập nhỏ). Chi
+     phí: tăng N kéo compute vLLM tăng tuyến tính, đúng vào vấn đề ngân sách mà Decision #19 đã né
+     bằng cách cap N=2000.
+  3. **Chốt phương án trung gian**: không downsample EN xuống 2000, không upsample VI lên full 52K
+     ngay — chọn **1 N dùng chung cho cả 2 phía** ở mức trung gian (ước lượng ban đầu 10-15K, KHÔNG
+     phải số cuối cùng), quyết định N thật dựa trên throughput đo được từ lượt test nhỏ trên pod
+     (`--n_samples 200`, đúng khuyến nghị đã có ở Decision #19) — cân bằng giữa việc không để VN bị
+     "chìm" trong dữ liệu và không vượt ngân sách thời gian/tiền thuê pod.
+  4. **Ràng buộc mới — pod tối đa 24h/lượt**: xác nhận có thể dừng giữa chừng, lưu checkpoint, tải
+     lên HF, thuê lượt mới rồi tải về chạy tiếp — nhưng **2 script hiện tại chưa hỗ trợ việc này**,
+     đã sửa ngay trong phiên này (chỉ code, chưa chạy thật):
+     - `training/dpo_config.py::build_dpo_config` — thêm `save_steps`/`save_total_limit`, set
+       `save_strategy="steps"` tường minh trong `trl.DPOConfig` (HF Trainer tự ghi checkpoint đầy đủ
+       — model+optimizer+scheduler+RNG — vào `output_dir/checkpoint-<step>/` theo cadence này).
+     - `training/train_dpo.py` — thêm `--resume_from_checkpoint` (`"auto"` tự tìm checkpoint mới
+       nhất qua `transformers.trainer_utils.get_last_checkpoint`, an toàn kể cả lượt chạy đầu tiên
+       vì trả về `None` khi chưa có checkpoint nào).
+     - `data_gen/vi_preference_gen.py` — vốn sinh dữ liệu bằng 1 lệnh `llm.chat()` duy nhất cho
+       TOÀN BỘ batch (mất hết nếu bị ngắt giữa chừng, không có cách "resume" một batch dở). Đổi
+       sang sinh theo chunk (`--checkpoint_every`, mặc định 500), flush (`meta_bridge.jdump`, ghi
+       đè toàn bộ — an toàn hơn append vì N nhỏ, tránh JSON hỏng giữa chừng) sau mỗi chunk. Lúc
+       resume: phần dựng prompt (CPU thuần, xác định hoàn toàn bởi seed/n_samples/corpus) luôn chạy
+       lại từ đầu (rẻ, tái lập được), chỉ phần còn thiếu mới gửi cho vLLM — dựa vào số cặp đã có sẵn
+       trong `preference_data_path`.
+     - Quy trình vận hành (không phải code, thao tác tay/script driver riêng): trước khi hết 24h,
+       upload `output_dir`/`preference_data_path` lên HF qua `tools/hf_upload/*.py`; lượt thuê sau
+       tải về đúng path cũ rồi chạy lại lệnh cũ (script tự phát hiện tiến độ đã có).
+- **Rejected alternatives:** (a) Chấp nhận downsample EN xuống 2000 không đo — loại, rủi ro confound
+  không định lượng được. (b) Upsample VI lên full 67K ngay — loại, vượt ngân sách thời gian/tiền đã
+  biết trước (Decision #19), chưa có cơ sở throughput thật để cam kết. (c) Không sửa resumability,
+  cứ chạy 1 lèo và chấp nhận rủi ro mất hết nếu pod hết giờ — loại, rủi ro cao và không cần thiết vì
+  chi phí sửa code thấp.
+- **Consequences:** `training/dpo_config.py`, `training/train_dpo.py`,
+  `data_gen/vi_preference_gen.py` đã sửa (syntax-check qua `python3 -m py_compile`, chưa chạy thật —
+  vẫn cần vLLM/GPU thật để verify hành vi runtime). N cuối cùng cho EN/VN vẫn CHƯA CHỐT — chờ đo
+  throughput thật trên pod (test `--n_samples 200`) trước khi quyết định. `.agents/infra_handoff.md`
+  cần thêm ghi chú giới hạn 24h/lượt của ckey.vn.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có
@@ -667,7 +770,9 @@
   giữa 2 phép đo độc lập — chưa phải câu trả lời cuối cùng (N nhỏ, chưa test thống kê chính thức).*
 - **RQ2** *(GĐ3, có điều kiện)*: Nếu RQ1 kém, bổ sung dữ liệu preference tiếng
   Việt cải thiện ASR tiếng Việt bao nhiêu, đánh đổi utility gì? — *Chưa trả lời,
-  phụ thuộc kết quả RQ1.*
+  phụ thuộc kết quả RQ1. Từ Decision #20: đo qua 2 nhánh song song — T9/T10
+  (joint-from-scratch EN+VN) và T9b/T10b (domain-incremental trên `meta_secalign_8b`,
+  sạch hơn cho câu hỏi này, đo thêm catastrophic forgetting của EN defense).*
 - **RQ3** *(GĐ4)*: Với ngân sách 1 GPU, cấu hình nào (qua Optuna, neo quanh giá
   trị công bố) đạt ASR gần nhất `Meta-SecAlign-8B`? — *Chưa trả lời.*
 - **RQ4** *(GĐ5-6)*: 10 vector tấn công mới có đại diện cho lớp tấn công chưa

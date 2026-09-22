@@ -11,6 +11,13 @@ are wired up by default here; add them via DPOConfig/BitsAndBytesConfig if actua
 
 Not run in this pass: needs real preference data from en_preference_gen.py / vi_preference_gen.py
 / attack10_gen.py plus a GPU.
+
+Resumability (ckey.vn pod hard-caps rentals at 24h — see .agents/infra_handoff.md, Decision #21):
+dpo_config.py sets save_strategy="steps" so HF Trainer already writes full resumable checkpoints
+(model+optimizer+scheduler+RNG) to output_dir/checkpoint-<step>/ periodically. Before the pod's 24h
+limit, upload output_dir (via tools/hf_upload/*.py) to HF; on the next pod, download it back to the
+same output_dir path and pass --resume_from_checkpoint auto (or an explicit checkpoint-<step> path)
+to pick up training exactly where it stopped.
 """
 
 from __future__ import annotations
@@ -27,9 +34,11 @@ def train(
     output_dir: str,
     lora_target: str = "8b",
     learning_rate: float | None = None,
+    resume_from_checkpoint: str | None = None,
 ):
     from datasets import load_dataset  # deferred: heavy dependency
     from transformers import AutoModelForCausalLM, AutoTokenizer  # deferred: heavy dependency
+    from transformers.trainer_utils import get_last_checkpoint  # deferred: heavy dependency
     from trl import DPOTrainer  # deferred: heavy dependency
 
     tokenizer = AutoTokenizer.from_pretrained(base_model)
@@ -46,7 +55,13 @@ def train(
         processing_class=tokenizer,
         peft_config=lora_config,
     )
-    trainer.train()
+
+    resume = resume_from_checkpoint
+    if resume == "auto":
+        # None if output_dir has no checkpoint-<step>/ yet (fresh run) -- get_last_checkpoint
+        # returns None rather than raising in that case, so this is safe on the very first run too.
+        resume = get_last_checkpoint(output_dir)
+    trainer.train(resume_from_checkpoint=resume)
     trainer.save_model(output_dir)
     return output_dir
 
@@ -59,6 +74,13 @@ def main() -> None:
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--lora_target", choices=["8b", "70b"], default="8b")
     parser.add_argument("--learning_rate", type=float, default=None)
+    parser.add_argument(
+        "--resume_from_checkpoint",
+        default=None,
+        help="'auto' to resume from the latest checkpoint-<step>/ under --output_dir if one exists "
+        "(safe on a fresh run too -- becomes a no-op), or an explicit checkpoint directory path. "
+        "Needed because the rented pod has a 24h max rental (see .agents/infra_handoff.md).",
+    )
     args = parser.parse_args()
 
     train(
@@ -68,6 +90,7 @@ def main() -> None:
         output_dir=args.output_dir,
         lora_target=args.lora_target,
         learning_rate=args.learning_rate,
+        resume_from_checkpoint=args.resume_from_checkpoint,
     )
 
 

@@ -198,6 +198,38 @@ xác chưa xác minh lại được.
   đầy đủ + diễn giải ở mục 4 (Decision #18). Bắt buộc báo cáo utility tiếng Việt lành tính đi kèm
   mỗi số ASR tiếng Việt trước khi diễn giải — cùng nguyên tắc 2 tầng competence-vs-compliance đã
   dùng cho nhóm vector encoding (`decode_accuracy_rate`/`conditional_asr`).
+- **RQ2 — hai thiết kế train song song, không phải một (xem [`.agents/record.md`](.agents/record.md)
+  Decision #20):**
+  1. **Joint-from-scratch (T9/T10, nhánh chính)**: train `llama_3_1_8b_instruct` (chưa defense) từ
+     đầu, gộp preference data EN+VN trong 1 lượt DPO — đúng phương pháp gốc của SecAlign/SecAlign++
+     (2 paper gốc luôn train LoRA từ base sạch). **Lưu ý quy mô**: `en_preference_gen.py` không cap
+     (full ~52K Alpaca nếu dùng), `vi_preference_gen.py` mặc định `n_samples=2000` (Decision #19) —
+     chạy theo default sẽ ra tỉ lệ EN:VN ~26:1 ngoài ý muốn, phải chốt tỉ lệ tường minh trước khi
+     chạy T9, không để 2 script tự quyết. **Chốt hướng xử lý (Decision #21)**: không downsample EN
+     xuống 2000 (rủi ro EN defense yếu hơn bản Meta công bố, tự tạo confound mới cho T14/RQ2) và
+     không upsample VI lên full ~67K ngay (compute tăng tuyến tính, phá vỡ đúng ngân sách Decision #19
+     đã né) — chọn 1 N trung gian dùng chung cho cả 2 phía (ước lượng ban đầu 10-15K, chưa phải số
+     cuối), N thật quyết định sau khi đo throughput trên pod (`--n_samples 200`).
+  2. **Domain-incremental (T9b/T10b, nhánh mới, đóng góp phương pháp riêng)**: continue-train chính
+     adapter của `meta_secalign_8b` (checkpoint EN-only đã công bố) bằng RIÊNG dữ liệu VN, không gộp
+     EN. Sạch hơn (1) cho câu hỏi RQ2 vì điểm xuất phát (EN defense) là số liệu Meta đã công bố sẵn
+     — không lẫn confound "pipeline TRL tự viết có tái lập đúng lượt train EN gốc hay không" (vốn là
+     lý do GĐ4/T11-14 phải hiệu chỉnh riêng cho nhánh (1)). Đo thêm được **catastrophic forgetting**
+     của EN defense sau incremental-train (so EN_ASR trước/sau) — hiệu ứng nhánh (1) không tách ra
+     được. Đây là góc chưa được 2 paper gốc chạm tới (không có bước continual/incremental fine-tuning
+     một defense đã công bố để mở rộng cross-lingual) — tính là **đóng góp phương pháp luận riêng**
+     của dự án, không chỉ ablation phụ, và cần nêu trong phần Contributions của bản thảo cuối.
+  3. T22 (GĐ6) báo cáo 3 nhánh tách bạch: EN-only (baseline Meta) / joint-from-scratch EN+VN /
+     incremental-VN-only — không gộp chung 1 số ASR.
+- **Ràng buộc hạ tầng — pod thuê giới hạn 24h/lượt (Decision #21):** pod GPU đang thuê (ckey.vn) chỉ
+  cho thuê tối đa 24h mỗi lượt, không thể chạy liên tục nhiều ngày trong 1 lượt như giả định ước
+  lượng "2-3 ngày" ban đầu cho T8/T9 ngầm định. Mọi việc tốn nhiều giờ (sinh dữ liệu VN T8, train
+  T9/T9b) phải **resumable qua ranh giới lượt thuê**: dừng trước khi hết 24h, lưu tiến độ, tải lên
+  Hugging Face, thuê lượt mới, tải về, chạy tiếp. Đã sửa code cho việc này (chưa chạy thật, cần
+  GPU): `vi_preference_gen.py` sinh dữ liệu theo chunk (`--checkpoint_every`) và tự phát hiện/tiếp
+  tục từ tiến độ đã lưu; `train_dpo.py`/`dpo_config.py` dùng cơ chế checkpoint sẵn có của HF Trainer
+  (`save_steps`, `--resume_from_checkpoint`). Upload/download giữa các lượt thuê vẫn là thao tác thủ
+  công qua `tools/hf_upload/*.py`, chưa tự động hoá.
 - Kết quả thực nghiệm so sánh trực tiếp với checkpoint công khai `Meta-SecAlign-8B` ở cùng quy mô
   8B (không suy diễn từ số liệu 70B).
 - Taxonomy 10 vector tấn công với train/held-out tách bạch, quy trình chống leakage.

@@ -90,7 +90,14 @@ def build_sep_reference(data_dir: str = "data") -> tuple[list[dict], list[dict]]
     )
     print(llm_input[0])
     time.sleep(5)
+    gen_t0 = time.time()
     outputs = meta_bridge.test_model_output_vllm(llm_input, model, tokenizer)
+    gen_elapsed = time.time() - gen_t0
+    samples_per_sec = len(llm_input) / gen_elapsed if gen_elapsed > 0 else float("nan")
+    print(
+        f"Generation: {len(llm_input)} samples in {gen_elapsed:.1f}s "
+        f"({gen_elapsed / 60:.1f} min, {samples_per_sec:.3f} samples/s)"
+    )
 
     data_reference = []
     for i, d in enumerate(data_sft_format):

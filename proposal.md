@@ -191,10 +191,13 @@ xác chưa xác minh lại được.
   **Đã chạy thật với `seallm_7b_v2_5`** (`.agents/record.md` Decision #15) — kết quả **không xác
   nhận rõ** confound này (SeaLLM 46% VN_ASR THẤP HƠN Llama 54%, ngược kỳ vọng), nhưng chính bản thân
   SeaLLM v2.5 lại bộc lộ instruction-following yếu (MMLU unparsed-rate 15% vs 0%) — không phải
-  control sạch. Đã nâng cấp lên `seallm_v3_7b_chat` (registry.py, Decision #16) để chạy thêm 1 lượt
-  trước khi kết luận. Bắt buộc báo cáo utility tiếng Việt lành tính đi kèm mỗi số ASR tiếng Việt
-  trước khi diễn giải — cùng nguyên tắc 2 tầng competence-vs-compliance đã dùng cho nhóm vector
-  encoding (`decode_accuracy_rate`/`conditional_asr`).
+  control sạch. **Đã nâng cấp lên `seallm_v3_7b_chat` và chạy xong** (Decision #16, #18): MMLU cải
+  thiện rõ (53.3%→68.3%), nhưng VN_ASR không đổi (46%→46%) và CyberSecEval2 lệch không đáng kể (nằm
+  trong nhiễu N nhỏ). SeaLLM v3 vẫn có gap VN<EN cùng chiều với Llama (-16pp so với -30pp) dù mạnh
+  tiếng Việt hơn hẳn — kết luận: phần lớn gap KHÔNG phải thuần confound năng lực ngôn ngữ, xem bảng
+  đầy đủ + diễn giải ở mục 4 (Decision #18). Bắt buộc báo cáo utility tiếng Việt lành tính đi kèm
+  mỗi số ASR tiếng Việt trước khi diễn giải — cùng nguyên tắc 2 tầng competence-vs-compliance đã
+  dùng cho nhóm vector encoding (`decode_accuracy_rate`/`conditional_asr`).
 - Kết quả thực nghiệm so sánh trực tiếp với checkpoint công khai `Meta-SecAlign-8B` ở cùng quy mô
   8B (không suy diễn từ số liệu 70B).
 - Taxonomy 10 vector tấn công với train/held-out tách bạch, quy trình chống leakage.
@@ -259,3 +262,44 @@ reference đo bằng đúng pool template v0.1. Control `seallm_7b_v2_5` (46% VN
 **không xác nhận rõ** confound năng lực tiếng Việt, nhưng bản thân v2.5 bộc lộ instruction-following
 yếu (không phải control sạch) — đã nâng cấp lên `seallm_v3_7b_chat` để chạy thêm trước khi kết luận
 (xem Decision #16). T4 vẫn ở "In progress", chưa "Done".
+
+**Cập nhật 2026-09-21 — RQ1 có câu trả lời sơ bộ (đáng tin), Go cho GĐ3**
+(`en_matched_injecteval_gen.py`, `results/phase1_multi_benchmark_pilot/multi_benchmark_pilot_metrics.json`,
+chi tiết đầy đủ ở `.agents/record.md` Decision #17/#18): thêm `EN_MATCHED_PILOT` — bộ tiếng Anh khớp
+từng mẫu với Vi-InjectEval v0.1 trên mọi trục trừ ngôn ngữ (cùng câu gốc Bactrian-X, cùng template
+injection dịch tay giữ độ lộ liễu, cùng witness token) — để cô lập đúng biến ngôn ngữ cho RQ1, thay
+cho phép so sánh cũ dùng SEP (2 bộ injection khác nhau, nhiễu "độ mạnh pool" lẫn vào "ngôn ngữ").
+
+| Model | EN_ASR (matched pool) | VN_ASR | Gap (VN−EN, matched) | Gap (VN−EN, SEP cũ) |
+|---|---|---|---|---|
+| `llama_3_1_8b_instruct` (không defense) | 84% | 54% | **-30pp** | -33.5pp |
+| `meta_secalign_8b` (có defense) | 2% | 10% | **+8pp** | +5pp |
+| `seallm_v3_7b_chat` (không defense, mạnh tiếng Việt) | 62% | 46% | **-16pp** | — |
+
+**Diễn giải (N=50 mỗi bộ, chưa test thống kê chính thức, nhưng có tín hiệu hội tụ)**: với model
+KHÔNG defense, VN_ASR thấp hơn EN_ASR nhất quán kể cả sau khi cô lập ngôn ngữ (Llama -30pp, SeaLLM
+v3 -16pp dù mạnh tiếng Việt hơn hẳn) — phần lớn không phải thuần confound năng lực ngôn ngữ (Decision
+#14), nhiều khả năng do phong cách injection dịch tay kém "hiệu lực" hơn khi chuyển ngữ; chênh lệch
+độ lớn gap giữa 2 model (Llama vs SeaLLM) gợi ý vẫn còn 1 phần đóng góp từ năng lực ngôn ngữ, không
+loại trừ hẳn. Với `meta_secalign_8b` (có defense), chiều gap **đảo ngược**: VN_ASR (10%) > EN_ASR
+(2%), +8pp — khớp hướng và độ lớn với phép đo cũ dùng SEP (+5pp) dù 2 phép đo dùng 2 bộ tiếng Anh
+hoàn toàn độc lập. Sự hội tụ này là bằng chứng khá vững cho **RQ1**: defense SecAlign, học hoàn toàn
+từ dữ liệu tiếng Anh, có một khoảng hở tổng quát hoá sang tiếng Việt thật (không phải nhiễu đo lường)
+— dù tuyệt đối cả 2 đều thấp (2-10%), khoảng hở tương đối (5x) có ý nghĩa.
+
+**Người dùng đã xác nhận GO cho GĐ3** (2026-09-21, xem Decision #19) dựa trên khuyến nghị này —
+`plan.csv` T6 chuyển "In progress" (chờ người dùng tự set Done theo CLAUDE.md mục 2). Đã chốt luôn:
+- **T7 (corpus tiếng Việt)**: `MBZUAI/Bactrian-X` (subset `vi`), license CC-BY-NC-4.0 (xác minh qua
+  HF API, phù hợp thesis phi thương mại) — không cần fallback.
+- **T8 (sinh preference tiếng Việt)**: `vi_preference_gen.py` đã thêm `--n_samples` (mặc định 2000,
+  script gốc xử lý toàn bộ ~67K dòng — vượt xa ngân sách 3 ngày) + `--seed` (tái lập được qua
+  `np.random.default_rng`). Sẵn sàng chạy, **còn thiếu**: vLLM + GPU thật (pod thuê) — chưa chạy
+  được trong môi trường agent, khuyến nghị thử `--n_samples 200` trước để đo throughput thật rồi mới
+  quyết định N cuối cùng.
+
+**Hạ tầng (2026-09-22)**: đã dựng xong pipeline cache môi trường cho pod thuê
+(`tools/pod_setup/build_env_cache.sh` + `pod_init.sh`, xem `tools/pod_setup/manual.md`) — build 1
+lần trên máy mạng tốt, upload lên Hugging Face, pod chỉ cần tải về thay vì cài trực tiếp từ PyPI
+(từng bị nghẽn route nặng). Đang trong quá trình setup pod thật; còn thiếu trước khi chạy T1-T3
+chính thức: sinh `SEP_dataset_test.json` (script `sep_reference_gen.py` đã viết, cần chạy 1 lần có
+GPU trên pod).

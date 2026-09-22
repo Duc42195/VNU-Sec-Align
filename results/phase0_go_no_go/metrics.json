@@ -1,0 +1,29 @@
+{
+  "llama_3_1_8b_instruct": {
+    "n_sep": 40,
+    "n_alpaca": 30,
+    "asr_sep_instructed": 0.875,
+    "sep_clean_witness_leak_rate": 0.025,
+    "sep_clean_refusal_rate": 0.0,
+    "alpaca_refusal_rate": 0.0,
+    "alpaca_empty_rate": 0.0
+  },
+  "meta_secalign_8b": {
+    "n_sep": 40,
+    "n_alpaca": 30,
+    "asr_sep_instructed": 0.05,
+    "sep_clean_witness_leak_rate": 0.025,
+    "sep_clean_refusal_rate": 0.0,
+    "alpaca_refusal_rate": 0.0,
+    "alpaca_empty_rate": 0.0
+  },
+  "jason_v1_final_checkpoint": {
+    "n_sep": 40,
+    "n_alpaca": 30,
+    "asr_sep_instructed": 0.825,
+    "sep_clean_witness_leak_rate": 0.025,
+    "sep_clean_refusal_rate": 0.0,
+    "alpaca_refusal_rate": 0.0,
+    "alpaca_empty_rate": 0.0
+  }
+}

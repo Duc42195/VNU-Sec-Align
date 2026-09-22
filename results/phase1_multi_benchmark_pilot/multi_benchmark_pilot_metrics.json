@@ -1,0 +1,63 @@
+{
+  "llama_3_1_8b_instruct": {
+    "vn_asr_sep_instructed": 0.54,
+    "vn_sep_clean_witness_leak_rate": 0.0,
+    "vn_clean_looks_vietnamese_rate": 1.0,
+    "en_asr_reference": 0.875,
+    "vn_minus_en_asr": -0.335,
+    "en_asr_matched_pool": 0.84,
+    "vn_minus_en_asr_matched": -0.30,
+    "cyberseceval2_pi_asr": 0.26666666666666666,
+    "mmlu_accuracy": 0.65,
+    "mmlu_unparsed_rate": 0.0,
+    "alpacafarm_refusal_rate": 0.0,
+    "alpacafarm_empty_rate": 0.0,
+    "n_vi_injecteval": 50, "n_cyberseceval2": 30, "n_mmlu": 60, "n_alpacafarm": 30
+  },
+  "meta_secalign_8b": {
+    "vn_asr_sep_instructed": 0.1,
+    "vn_sep_clean_witness_leak_rate": 0.0,
+    "vn_clean_looks_vietnamese_rate": 1.0,
+    "en_asr_reference": 0.05,
+    "vn_minus_en_asr": 0.05,
+    "en_asr_matched_pool": 0.02,
+    "vn_minus_en_asr_matched": 0.08,
+    "cyberseceval2_pi_asr": 0.26666666666666666,
+    "mmlu_accuracy": 0.6333333333333333,
+    "mmlu_unparsed_rate": 0.0,
+    "alpacafarm_refusal_rate": 0.0,
+    "alpacafarm_empty_rate": 0.0,
+    "n_vi_injecteval": 50, "n_cyberseceval2": 30, "n_mmlu": 60, "n_alpacafarm": 30
+  },
+  "seallm_7b_v2_5": {
+    "vn_asr_sep_instructed": 0.46,
+    "vn_sep_clean_witness_leak_rate": 0.0,
+    "vn_clean_looks_vietnamese_rate": 0.96,
+    "en_asr_reference": null,
+    "vn_minus_en_asr": null,
+    "en_asr_matched_pool": null,
+    "vn_minus_en_asr_matched": null,
+    "cyberseceval2_pi_asr": 0.4666666666666667,
+    "mmlu_accuracy": 0.5333333333333333,
+    "mmlu_unparsed_rate": 0.15,
+    "alpacafarm_refusal_rate": 0.0,
+    "alpacafarm_empty_rate": 0.0,
+    "n_vi_injecteval": 50, "n_cyberseceval2": 30, "n_mmlu": 60, "n_alpacafarm": 30,
+    "_note": "superseded by seallm_v3_7b_chat, kept for history -- not re-run with en_asr_matched_pool"
+  },
+  "seallm_v3_7b_chat": {
+    "vn_asr_sep_instructed": 0.46,
+    "vn_sep_clean_witness_leak_rate": 0.0,
+    "vn_clean_looks_vietnamese_rate": 0.98,
+    "en_asr_reference": null,
+    "vn_minus_en_asr": null,
+    "en_asr_matched_pool": 0.62,
+    "vn_minus_en_asr_matched": -0.16,
+    "cyberseceval2_pi_asr": 0.5,
+    "mmlu_accuracy": 0.6833333333333333,
+    "mmlu_unparsed_rate": 0.0,
+    "alpacafarm_refusal_rate": 0.0,
+    "alpacafarm_empty_rate": 0.0,
+    "n_vi_injecteval": 50, "n_cyberseceval2": 30, "n_mmlu": 60, "n_alpacafarm": 30
+  }
+}

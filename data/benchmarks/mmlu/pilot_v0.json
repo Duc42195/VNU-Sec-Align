@@ -1,0 +1,902 @@
+[
+  {
+    "question": "A state has had a tremendous influx of retired people in recent years. There has been considerable concern among state health officials who foresee that many of the senior citizens will become victims of price gouging on certain medical supplies and services. In an attempt to curb such fraudulent sales practices, the state legislature has enacted a law prohibiting the sale of hearing aids by non-physicians. The measure provides, however, that all non-physician sellers who are presently engaged in the business of selling hearing aids will not be affected. Assume that after the statute goes into effect, a non-physician moves to the state and wants to open a business selling hearing aids. After being advised that the state law prohibits him from doing so, he brings suit challenging the constitutionality of the statute. The most likely result is that the state law will be declared",
+    "subject": "professional_law",
+    "choices": [
+      "constitutional, because there is a rational basis for distinguishing between non-physicians are not so engaged.",
+      "constitutional, because a state has the power to regulate any phase of local business, even though such regulations may have some effect on interstate commerce, provided that Congress has not enacted legislation regarding the subject matter.",
+      "unconstitutional, because it denies non- physicians who are not presently engaged in the business of selling hearing aids the equal protection of the law, in violation of the Fourteenth Amendment.",
+      "unconstitutional, because it violates the commerce clause, since Congress has plenary power to regulate any activity that has any appreciable effect on interstate commerce."
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The time it takes for a pendulum swinging to and fro refers to its",
+    "subject": "conceptual_physics",
+    "choices": [
+      "frequency",
+      "period",
+      "wavelength",
+      "amplitude"
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A teachers union, a nongovernmental entity, seeks to picket the local city school board for its decision to require higher certification for instructors who wish to teach in the gifted and talented classes in elementary school. After a few days of picketing, the school board seeks a temporary injunction in the state court to restrain further picketing of the school board. The school board insists that the teachers union has violated Section 101 of the city's picketing ordinance. Section 101 reads as follows:\"Section 101. No picketing shall be permitted inside of, or on any sidewalk or street immediately adjacent or contiguous to public elementary and secondary schools without express permission of the mayor. Applications for such permission shall be filed at least three days before such picketing is intended to begin and shall state the purpose, place, and time of the proposed picketing. \"The court will most likely",
+    "subject": "professional_law",
+    "choices": [
+      "grant relief, because the teachers unionfailed to follow the procedure outlined in theordinance.",
+      "grant relief, because the ordinance isconstitutional.",
+      "deny relief, because the picketing ordinancewas unconstitutional on its face.",
+      "deny relief, because the ordinance does notprovide procedural due process."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The degree to which corporate decisions, policies, activities and impacts are acknowledged and made visible to relevant stakeholders is known as ________",
+    "subject": "business_ethics",
+    "choices": [
+      "Corporate Opaqueness",
+      "Corporate Transparency",
+      "Corporate Openness",
+      "Corporate Visibility"
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "_______ is the term used to describe the ongoing approval and acceptance of a company's activities by society, especially among local communities and civil societies.",
+    "subject": "business_ethics",
+    "choices": [
+      "Enlightened self interest",
+      "Social licence to operate",
+      "Community approval",
+      "Supply chain responsibility"
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Under the Establishment Clause, if a government regulation or statute has no sect preference, it may then be deemed to be valid after it first passes an additional three-pronged test under traditional analysis. Please choose which of the following concepts will NOT help a statute or action to be free from establishment of religion suspicions.",
+    "subject": "professional_law",
+    "choices": [
+      "It must have a nonspiritual legislative purpose.",
+      "The statute must not foster an excessive government entanglement with religion.",
+      "The statute must prohibit purely secular considerations.",
+      "The statute must have a primary effect that neither advances nor inhibits religion."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Voters in which of the following categories would be LEAST likely to vote?",
+    "subject": "high_school_government_and_politics",
+    "choices": [
+      "Blue-collar workers who belong to a union",
+      "Professionals",
+      "Voters who are active in their political parties",
+      "Voters aged 18-29"
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The legislative successes of the National Rifle Association, antiabortion activists, and other powerful interest groups demonstrate that",
+    "subject": "high_school_government_and_politics",
+    "choices": [
+      "United States domestic policy grew more conservative in the 1990s",
+      "the influence of political action committees has weakened in recent years",
+      "the power of interest groups depends on the degree of support for their positions in the White House",
+      "majority opinion on an issue can sometimes be overridden by the intensity of a minority's commitment to activism"
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A man informed the police that he wanted to confess to a murder. After they read him his constitutional rights, he insisted that he was acting voluntarily. He then took them to the scene of the murder where they found the victim's body. By the next day, the man claimed that \"voices\" had ordered him to confess and he didn't act voluntarily. A physician verified that the man suffered from hallucinations that impaired his volitional abilities, preventing a voluntary confession. Will the court suppress the statements?",
+    "subject": "professional_law",
+    "choices": [
+      "Yes, he was insane and could not have given a voluntary confession.",
+      "Yes, the police overreached by not having him mentally evaluated before questioning him.",
+      "No, there was no police misconduct or overreaching, and as a result the confession is voluntary.",
+      "No, a confession is admissible when accompanied by actions by the defendant that prove the truth of the statements."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The government of a country decides to increase government spending and taxes by the same amount in order to keep a balanced budget. The MPC is 0.75. Which of the following is true of this situation? Policy Direction     Expenditure Multiplier     Tax Multiplier",
+    "subject": "high_school_macroeconomics",
+    "choices": [
+      "expansionary     4     3",
+      "expansionary     4     -3",
+      "contractionary     4     3",
+      "contractionary     4     -3"
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "What are the dimensions of $\\hat{u}^t \\hat{u}?",
+    "subject": "econometrics",
+    "choices": [
+      "T x k",
+      "T x 1",
+      "k x 1",
+      "1 x 1"
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Which of the following is an element of a CPA firm's quality control policies and procedures applicable to the firm's auditing practice?",
+    "subject": "professional_accounting",
+    "choices": [
+      "Acceptance of a client relationship.",
+      "Professional skepticism of management.",
+      "Computer information processing.",
+      "Efficiency of organizational structures."
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Which of the following statements is accurate in regard to a perfectly competitive firm?",
+    "subject": "high_school_microeconomics",
+    "choices": [
+      "Demand is downward-sloping.",
+      "The demand curve lies above the marginal revenue curve.",
+      "Price is determined by the equilibrium in the entire market.",
+      "Average revenue differs from price."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "An individual paid taxes 27 months ago, but did not file a tax return for that year. Now the individual wants to file a claim for refund of federal income taxes that were paid at that time. The individual must file the claim for refund within which of the following time periods after those taxes were paid?",
+    "subject": "professional_accounting",
+    "choices": [
+      "One year.",
+      "Two years.",
+      "Three years.",
+      "Four years."
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "If a bank has $500 in checking deposits and the bank is required to reserve $50 what is the reserve ratio? How much does the bank have in excess reserves?",
+    "subject": "high_school_macroeconomics",
+    "choices": [
+      "10 percent $450 in excess reserves",
+      "90 percent $50 in excess reserves",
+      "90 percent $450 in excess reserves",
+      "10 percent $50 in excess reserves"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The legal principle that instructs judges to follow established precedent when deciding cases is commonly referred to as",
+    "subject": "high_school_government_and_politics",
+    "choices": [
+      "certiorari",
+      "de jure",
+      "ex post facto",
+      "stare decisis"
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Which of the following is an equivalent expression for saying that the explanatory variable is \"non-stochastic\"?",
+    "subject": "econometrics",
+    "choices": [
+      "The explanatory variable is partly random",
+      "The explanatory variable is fixed in repeated samples",
+      "The explanatory variable is correlated with the errors",
+      "The explanatory variable always has a value of one"
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "While ratifying the Constitution, the primary point of disagreement between Federalists and Anti-Federalists was over",
+    "subject": "high_school_government_and_politics",
+    "choices": [
+      "whether representation in Congress should be equal among states or proportional to population",
+      "the strength of the federal government relative to the states",
+      "the future of the slave trade",
+      "whether people had inalienable rights"
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The industry that makes plastic army figures uses a small fraction of the plastic demanded for all purposes. On this basis, we can conclude that the army-figures industry is most likely a(n)",
+    "subject": "high_school_microeconomics",
+    "choices": [
+      "increasing-cost industry",
+      "constant-cost industry",
+      "decreasing-cost industry",
+      "profit-making industry"
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "What will be the properties of the OLS estimator in the presence of multicollinearity?",
+    "subject": "econometrics",
+    "choices": [
+      "It will be consistent, unbiased and efficient",
+      "It will be consistent and unbiased but not efficient",
+      "It will be consistent but not unbiased",
+      "It will not be consistent"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A farmer owned a tract of land in a state that has a notice recording statute and follows the title theory of mortgages. There were two farms situated on the property, one farm on the eastern half and one farm on the western half of the property. The farmer recorded a general warranty deed conveying the property to his son. Two years later, the son obtained a mortgage, secured by the farm property, in favor of his friend. The friend promptly recorded the mortgage. Twenty years later, the son sold the property to an investor by a general warranty deed, with the investor assuming the friend's mortgage. The following year, the investor subdivided the property and sold the western farm to a developer, while retaining the eastern farm. There was no mention of the mortgage in the general warranty deed between the investor and developer. The developer was unable to rezone the property to build houses as he had planned, so the developer sold the western farm to a florist. The conveyance to the florist made no mention of the friend's mortgage. Three years later, the florist entered into a contract with a rancher, pursuant to which the rancher would purchase the western farm for $75,000. The closing date for the deal was set for January 15. Assuming that on January 10, the rancher conducted a title search that revealed the friend's mortgage on the property, which of the following is correct?",
+    "subject": "professional_law",
+    "choices": [
+      "The rancher would be entitled to rescind the real estate contract with the florist immediately.",
+      "The encumbrance renders title to the western farm unmarketable.",
+      "The mortgage would only encumber the eastern farm, not the western farm, because the investor's partition of the property created a joint tenancy.",
+      "The encumbrance would not entitle the rancher to rescind the real estate contract until closing on January 15."
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "_______ theory can be described as a code of conduct to which all rational beings should adhere. This contrasts with ________ morality which is the code of conduct adopted by a particular group or society.",
+    "subject": "business_ethics",
+    "choices": [
+      "Descriptive, Normative",
+      "Normative, Instrumental",
+      "Normative, Descriptive",
+      "Ethical, Descriptive"
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "In a criminal prosecution the government must prove that the defendant affixed a rubber-stamp containing his signature to certain fraudulent letters mailed to the victim. The defendant denied that he stamped the letters. There were no witnesses to the defendant stamping the letters. The prosecution attempted to present a co-worker to testify that defendant maintained sole control of the stamp and used it once daily at 3 p.m. to sign all outgoing letters, and then immediately returned it to his safe. The co-worker would testify that he saw the defendant using the stamp in that habitual manner over a period of many years. The defense objected because this did not prove that the defendant's practice was followed on the dates in question. Under the Federal Rules of Evidence, what will the court rule?",
+    "subject": "professional_law",
+    "choices": [
+      "The testimony is inadmissible because evidence of habit is not admissible in a criminal case under the Federal Rules of Evidence.",
+      "The testimony is inadmissible because evidence of prior habit will only distract the jury from deciding whether the defendant actually acted that way on the specified dates.",
+      "The testimony is admissible because it proves that the defendant was the only person who could have used the stamp.",
+      "The testimony is admissible because habit and routine practice are admissible under the Federal Rules of Evidence."
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A satellite in Earth orbit is above Earth’s",
+    "subject": "conceptual_physics",
+    "choices": [
+      "atmosphere",
+      "gravitational field",
+      "Both",
+      "Neither"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A man went shopping to buy a used car. He found one on a used car lot that was offered \"as is.\" He looked at it thoroughly. The tag on the window indicated a special 30-point inspection was done on the car. The 30 points included the drive train, the engine, spark plugs, oil, transmission, and numerous other major items. The man put a $1,000 down payment on the car. He took the car to an independent mechanic who told him that the car had been in an accident and had sustained severe damage, including a cracked engine block. The mechanic offered that the dealer must have known of that kind of massive damage. The man tried to return the car and get his down payment back, but the dealer refused, claiming the car was sold \"as is,\" and all express or implied warranties under the Uniform Commercial Code were disclaimed in the purchase contract. Stuck with a lemon, the man sued the company under a common law fraud theory. The company counterclaimed for the balance of the purchase price. Will the man likely prevail in the litigation against the car dealer?",
+    "subject": "professional_law",
+    "choices": [
+      "Yes, because the dealer withheld material information intentionally and knowingly misrepresented the condition of the car.",
+      "Yes, because the dealer has a duty to give every reason why an \"as is\" car may go bad and to list those reasons on the window.",
+      "No, because the dealer cannot be held responsible for possible damage that the used car may have developed after years of use.",
+      "No, because the dealer is absolutely protected when he sells a used car in \"as is\" condition, and where the warranties under the Uniform Commercial Code are duly waived."
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A legislative assistant to a state senator approached various wealthy lobbyists without the senator's knowledge to solicit illegal campaign contributions for the senator's upcoming re-election campaign. The assistant dictated several letters requesting such contributions, which the senator signed without reading, along with a pile of other correspondence. Before the letters were mailed, however, the senator discovered what had happened and then immediately terminated the assistant's employment. Later that same evening, after being notified that he was fired, the assistant returned to the senator's office and used his keys, which had not yet been returned, to enter. The assistant made copies of the letters in question. The following day, the assistant turned over the copies of the letters to an investigative reporter from the local newspaper in the area. The reporter had heard about the assistant's dismissal from another staff member and was curious about all the underlying circumstances. After the assistant provided the reporter with all of the pertinent facts, the reporter wrote a news story regarding the senator's solicitation of illegal campaign contributions. Although the reporter's story was printed in the newspaper, he did not reveal the source of his information. As soon as the publication was made, the FBI initiated an investigation of the senator's campaign finances. If the senator asserts a claim based on invasion of privacy against the newspaper for the publication of the article concerning the solicitation of illegal campaign contributions, the most likely result is that the senator will",
+    "subject": "professional_law",
+    "choices": [
+      "prevail, because the newspaper story placed him in a \"false light in the public eye. \"",
+      "prevail, because the newspaper disclosed private facts about the plaintiff.",
+      "not prevail, unless he is able to prove malice on the defendant's part.",
+      "not prevail, because the newspaper was acting in the public interest by printing the news story."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "If a total of 762 students at a citywide competition are divided into 6 equal-sized teams, how many students are on each team?",
+    "subject": "elementary_mathematics",
+    "choices": [
+      "110",
+      "120",
+      "127",
+      "137"
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A pedestrian is suing a defendant for injuries she suffered to her leg when the defendant ran the pedestrian over with his motorcycle. On cross- examination of the pedestrian's physician, the defendant's attorney asked him whether or not the pedestrian had told him that the leg that she claimed was injured had been permanently stiff as a result of a former field hockey injury the pedestrian suffered in high school. Upon objection by the pedestrian's attorney, the trial judge should",
+    "subject": "professional_law",
+    "choices": [
+      "sustain the objection, as hearsay not within any recognized exception.",
+      "sustain the objection, as violative of the physician-patient privilege.",
+      "overrule the objection, as a statement made for the purpose of diagnosis or treatment.",
+      "overrule the objection, as a statement against interest."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A diffraction grating relies on light",
+    "subject": "conceptual_physics",
+    "choices": [
+      "interference",
+      "amplitudes",
+      "variations in brightness",
+      "being composed of photons"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The characteristic roots of the MA process\n\n$y_t = -3u_{t-1} + u_{t-2} + u_t$\n\nare",
+    "subject": "econometrics",
+    "choices": [
+      "1 and 2",
+      "1 and 0.5",
+      "2 and -0.5",
+      "1 and -3"
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A father died leaving a will by which he devised a 100-acre tract to his daughter. At the time of the father's death, he believed that he owned all of the 100-acre tract. However, the father actually owned 95 acres of the tract. The other five acres were owned by a farmer. After taking possession of the tract, the daughter executed and delivered a warranty deed to a buyer, purporting to convey all 100 acres of the tract. The agreed purchase price was $100,000. According to the terms of the sale, the buyer paid the daughter a down payment of $25,000, with the unpaid portion of the purchase price (i. e. , $75,000) secured by a mortgage. The mortgage instrument described the property interest as covering all 100 acres of the tract. After the daughter buyer transaction was completed, the farmer came forward and informed the parties that she was the true record owner of five acres of the 100-acre tract. Upon the farmer's threat to sue to quiet title, the daughter negotiated a deal whereby she paid the farmer $5,000 for the five-acre tract. As part of their agreement, the farmer executed and delivered a quitclaim deed quitclaiming to the buyer all of her interest in the five-acre parcel. Thereafter, the buyer defaulted on the mortgage debt, and the daughter properly consummated foreclosure proceedings, becoming the purchaser of the tract at her own foreclosure sale. The description of the deed in the foreclosure sale referred to the tract as consisting of all 100 acres. After the foreclosure sale was finalized, the buyer brought suit claiming title in fee simple to the five-acre tract, formerly owned by the farmer. In an appropriate action to determine the title to the said five-acre tract, the buyer will",
+    "subject": "professional_law",
+    "choices": [
+      "lose, because the daughter did not have good and marketable title at the time she purported to convey the 100-acre tract to the buyer.",
+      "lose, because the doctrine of after-acquired title controls.",
+      "win, because the deed from the farmer to the buyer was a quitclaim deed.",
+      "win, because the quitclaim deed from the farmer to the buyer was subsequent to the deed from the daughter to the buyer and to the mortgage."
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The surface of Planet Earth loses energy to outer space due mostly to",
+    "subject": "conceptual_physics",
+    "choices": [
+      "conduction.",
+      "convection.",
+      "radiation.",
+      "radioactivity."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": " _________, such as _______ and _______ are processes by which organisations implement environmental goals, policies and responsibilities and ensure regular auditing and reporting, which go beyond legal compliance.",
+    "subject": "business_ethics",
+    "choices": [
+      "Environmental management systems, SA8000, EMAS",
+      "Social accountability standards, ISO14001, SA8000",
+      "Environmental management systems, ISO14001, EMAS",
+      "Social accountability standards, EMAS, SA8000"
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "According to The Federalist Papers, federalism has which of the following effects on political factions?",
+    "subject": "high_school_government_and_politics",
+    "choices": [
+      "It provides a structured environment in which factions may flourish.",
+      "It limits the dangers of factionalism by diluting political power.",
+      "It allows factions to dominate on the national level while limiting their influence on state governments.",
+      "It eliminates any opportunity for factions to form."
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Which of the following is most likely to result in a shift to the right in the demand curve for orange juice?",
+    "subject": "high_school_microeconomics",
+    "choices": [
+      "A bumper crop of oranges in Florida",
+      "A decrease in the price of Tang",
+      "Expectations of lower future prices for orange juice",
+      "Expectations of higher future income among juice drinkers"
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Find the value of the expression −16 + 13 + (−33).",
+    "subject": "elementary_mathematics",
+    "choices": [
+      "4",
+      "62",
+      "36",
+      "−36"
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Patents, control of resources, economies of scale, and exclusive licenses are",
+    "subject": "high_school_microeconomics",
+    "choices": [
+      "all requirements for price discrimination",
+      "required in order for a firm to earn short-run profits",
+      "all sources of elastic demand",
+      "all barriers to entry"
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "If OLS is used in the presence of autocorrelation, which of the following will be likely consequences?\n\ni) Coefficient estimates may be misleading\n\n\nii) Hypothesis tests could reach the wrong conclusions\n\n\niii) Forecasts made from the model could be biased\n\n\niv) Standard errors may inappropriate",
+    "subject": "econometrics",
+    "choices": [
+      "(ii) and (iv) only",
+      "(i) and (iii) only",
+      "(i), (ii), and (iii) only",
+      "(i), (ii), (iii), and (iv)"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Better access to certain markets, differentiation of products, and the sale of pollution-control technology are ways in which better environmental performance can:",
+    "subject": "business_ethics",
+    "choices": [
+      "Increase Revenue",
+      "Increase Costs",
+      "Decrease Revenue",
+      "Decrease Costs"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "During a hotly contested gubernatorial election, a local newspaper endorsed the candidacy of a corporate official of a chemical company. Inspired by a progressive revolt against the chemical company's domination of the state government, the corporate official's opponent, won by an extremely close margin. After the new governor took office, he vowed to get back at the company that owned the local newspaper for its newspaper's endorsement of the corporate official. Using his influence, the new governor was instrumental in getting the state legislature to pass a bill that imposed a special tax on the sale of ink and paper used in the publication of newspapers and periodicals of general circulation. The tax bill was signed into law by the governor. The strongest constitutional basis upon which to challenge the validity of the tax would be the",
+    "subject": "professional_law",
+    "choices": [
+      "equal protection clause of the Fourteenth Amendment.",
+      "bill of attainder provision under Article I, Section 10.",
+      "privileges or immunities clause of the Fourteenth Amendment.",
+      "First Amendment, as incorporated in the Fourteenth Amendment."
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The direction of natural processes is from states of",
+    "subject": "conceptual_physics",
+    "choices": [
+      "higher order to lower order",
+      "lower order to higher order",
+      "disorganization to organization",
+      "disorder to equilibrium"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A dark room technician who develops film into photographs loses his job because few people use film cameras any more. This is an example of which of the following?",
+    "subject": "high_school_macroeconomics",
+    "choices": [
+      "Frictional unemployment",
+      "Structural unemployment",
+      "Cyclical unemployment",
+      "Seasonal unemployment"
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A woman owned a four-unit apartment building and lived in one of the units. When one of her tenants vacated his apartment, the woman placed an advertisement in the local paper that read as follows: \"Large two-bedroom apartment available for rent. White male preferred.\" The woman's preference was motivated by the fact that she liked to have a mix of tenants of both genders and from various racial and ethnic backgrounds in her building, and of the remaining rented units, one was rented to an African American man and the other to a Pacific Islander woman. Based upon these facts, which of the following statements is true?",
+    "subject": "professional_law",
+    "choices": [
+      "The federal Fair Housing Act makes it illegal for the woman to refuse to rent her units to prospective tenants because of their race or gender.",
+      "The woman's motive absolves her from any liability under the federal Fair Housing Act.",
+      "There are no violations of any federal laws under these facts.",
+      "Under the federal Fair Housing Act, the woman was not permitted to state a racial or gender preference in the advertisement."
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "The fractional reserve banking system's ability to create money is lessened if",
+    "subject": "high_school_macroeconomics",
+    "choices": [
+      "households that borrow redeposit the entire loan amounts back into the banks.",
+      "banks hold excess reserves.",
+      "banks lend all excess reserves to borrowing customers.",
+      "households increase checking deposits in banks."
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Hall Co. purchased a machine on January 1 at a cost of $140000. The machine had an estimated useful life of eight years and a salvage value of $60000. Hall chose to depreciate the machine using the double- declining balance method. What was the carrying amount of the machine in Hall's balance sheet at the end of its second year of operations?",
+    "subject": "professional_accounting",
+    "choices": [
+      "$60,000",
+      "$61,250",
+      "$78,750",
+      "80000"
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A company should recognize goodwill in its balance sheet at which of the following points?",
+    "subject": "professional_accounting",
+    "choices": [
+      "Costs have been incurred in the development of goodwill.",
+      "Goodwill has been created in the purchase of a business.",
+      "The company expects a future benefit from the creation of goodwill.",
+      "The fair market value of the company’s assets exceeds the book value of the company’s assets."
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Malik has 240 CDs. He sorted them into 12 equal groups. Which expression shows how to find the number of CDs in each group?",
+    "subject": "elementary_mathematics",
+    "choices": [
+      "240 ÷ 12",
+      "240 – 12",
+      "240 + 12",
+      "240 × 12"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A baseball team sold 215 youth tickets for $3 ea",
+    "subject": "elementary_mathematics",
+    "choices": [
+      "(215 × 3) – (467 × 7)",
+      "(215 × 7) – (467 × 3)",
+      "(467 × 3) – (215 × 7)",
+      "(467 × 7) – (215 × 3)"
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A city imposes a municipal excise tax of $200 per year on commercial artists' studios in that city. It also imposes an excise tax of $100 per year on every itinerant commercial figure drawer for the privilege of using the streets and sidewalks. A credit is allowed against this latter tax for any excise tax paid to the city by the drawer or his employer in respect to the maintenance of an artist's studio in the city. A gallery, located in a neighboring state, has been sending two itinerant artists into the city. Their practice is to draw a picture of a pedestrian, ask him to order a finished painting, and collect a payment of $2. 00. The drawing is sent to a studio, which frames it and mails the framed painting to the customer. The neighboring state does not impose a tax on artists' studios. The gallery challenges the constitutionality of the $100 per year excise tax that is imposed upon its itinerant artists in the city. The court will most likely declare this tax",
+    "subject": "professional_law",
+    "choices": [
+      "constitutional, as a valid ad valorem tax on interstate commerce.",
+      "constitutional, since the tax was levied not on the commercial art business as a whole but on the local activity of drawing pictures.",
+      "unconstitutional, since a state or municipality may not impose a license tax on orders for goods or services to be perfonned in another state.",
+      "unconstitutional, as a discriminatory privilege tax."
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Keri spent 3 hours on her homework. She spent equal amounts of time on all subjects. If Keri spent 1 over 2 hour on science, how many subjects did she study?",
+    "subject": "elementary_mathematics",
+    "choices": [
+      "4 subjects",
+      "2 subjects",
+      "6 subjects",
+      "5 subjects"
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A law school professor was hired to teach a bar review course. The professor taught the course in three cities. After conducting the sessions, the professor submitted an expense report to the owner of the bar review course. Her expense voucher included a $225 travel expenditure to a fourth city where the professor had attended a symposium unrelated to the bar review course. The professor also submitted the $225 travel expenditure to the administrator for the faculty at the law school where she teaches. The dean of the law school had previously approved the professor's appearance at the symposium. The owner paid the professor for the symposium-related expenditure but indicated that the expense item was improperly billed to his company. The professor was indicted for false pretenses. In her defense, she contends that the double billing was the result of a bookkeeping error. Her defense should be",
+    "subject": "professional_law",
+    "choices": [
+      "valid, if her mistake was reasonable.",
+      "valid, if she didn't know that the billing to the bar review company included the symposium expenditure.",
+      "invalid, if her bookkeeping error was unreasonable.",
+      "invalid, because white-collar crime imposes absolute criminal liability."
+    ],
+    "answer_letter": "B",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A woman was hired by a restaurant as a cashier under an at-will employment contract. On the woman's first day at work, she noticed a sign in the kitchen area that read:\"IMPORTANT NOTICE TO ALL EMPLOYEESEmployees are not permitted to smoke during working hours. Any employee who is found to be in violation of this policy will be fined $50 for the first offense; $100 for the second offense; and fired for the third violation. \"The woman, who was a smoker, read the notice, but did not object or make any comment regarding the restaurant's nonsmoking policy. For six months, the woman worked at the restaurant and never smoked during business hours. One afternoon, the woman was working when an armed robber stormed into the restaurant. He pointed a pistol at the woman and demanded all the money from the cash register. Frightened and panic stricken, the woman handed over the money and then collapsed. Moments later, she regained consciousness and then smoked a cigarette while she regained her composure. Thereafter, the woman resumed her duties for the rest of the day. The next week, however, when the woman received her pay check, she noticed that the restaurant had deducted $50 from her check. A note was attached indicating that the woman was being fined for smoking during business hours. Although the woman protested, the restaurant refused to make any waiver and stood by its policy. In an action by the woman against the restaurant to recover the $50, which of the following is the best argument in the woman's favor?",
+    "subject": "professional_law",
+    "choices": [
+      "The restaurant's nonsmoking policy concerned a collateral matter that was not incorporated within the terms of their employment contract.",
+      "The restaurant impliedly waived the nonsmoking provision by permitting the woman to continue working for the rest of the day.",
+      "The nonsmoking provision constituted a constructive condition subsequent that was excused because of temporary impracticability.",
+      "The nonsmoking provision concerning disciplinary action is unenforceable, because it attempts to impose a penalty instead of reasonably liquidating the damages, if any, sustained by the restaurant."
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "___________, ___________ and __________ are all factors which can impact the moral intensity",
+    "subject": "business_ethics",
+    "choices": [
+      "Social consensus, Temporal immediacy, Proximity",
+      "Proximity, Social dissensus, Futility of effect",
+      "Proximity, Temporal immediacy, Social dissensus",
+      "Social dissensus, Cultural immediacy, Proximity"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "At the break-even point",
+    "subject": "high_school_macroeconomics",
+    "choices": [
+      "the expenses of corporations just equal their revenues.",
+      "household spending equals household income.",
+      "total spending equals income.",
+      "dissaving occurs and inventories are accumulating."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A freight company offered to purchase a large order of tires from a wholesale tire distributor for specified terms. Before receiving an answer, the purchasing agent called the wholesaler to state, \"We are confronting a critical financial crisis and cannot afford to make the purchase.\" The seller sent an acceptance form the next day, and shipped the goods with an invoice. When the purchasing company did not pay and shipped the goods back, the seller sued for his lost profit. The seller claimed that the purchasing agent's words did not clearly communicate a revocation of the offer. Will the seller prevail?",
+    "subject": "professional_law",
+    "choices": [
+      "Yes, because a revocation of an offer requires explicit words of rejection in order to be enforced.",
+      "Yes, because the seller must be able to rely on a definite order of goods.",
+      "No, because the words of revocation were clear enough to communicate that the deal was off.",
+      "No, because a buyer is never in breach of an agreement when it rejects goods prior to their shipment."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Which of the following statements about voting patterns is NOT true?",
+    "subject": "high_school_government_and_politics",
+    "choices": [
+      "Non-whites are more likely to vote Democratic than are whites.",
+      "Women are more likely to vote Democratic than are men.",
+      "Low-income Americans are more likely to vote Democratic than are upper-income Americans.",
+      "Evangelical Christians are more likely to vote Democratic than are non-religious Americans."
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "An owner had a record store in the downtown business area of a city. A famous rock group was scheduled to perform at the local civic center and the owner featured the band's records in a special sale for the two weeks prior to the concert. In order to promote his sale, the owner installed loudspeakers on the outside of his store window so that he could play the band's records for people walking by to hear. It was the owner's hope that when they heard the records, the passersby would turn into customers and buy the band's records. Subsequently, the owner was cited for violating a city ordinance which provides that:\"An owner of property located within the city limits shall not permit to be used on his property any device which causes sounds, other than clock chimes, to be heard upon the street or sidewalk. Violation of this ordinance shall subject the property owner to a fine of $50. 00 for each occurrence. \"If the owner is successful in challenging this ordinance in court, the court would most likely reason that",
+    "subject": "professional_law",
+    "choices": [
+      "the ordinance violates equal protection because some sounds are permitted, while others are not.",
+      "the ordinance violates the owner's rights of freedom of speech, because there is not valid interest to support the ordinance.",
+      "the ordinance violates the owner's rights of freedom of speech, because a municipality may not regulate the use of sound amplification equipment.",
+      "the ordinance violates the owner's rights under the First and Fourteenth Amendments, because it is vague in defining unpermitted sounds."
+    ],
+    "answer_letter": "D",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Mast Co. converted from the FIFO method for inventory valuation to the LIFO method for financial statement and tax purposes. During a period of inflation would Mast's ending inventory and income tax payable using LIFO be higher or lower than FIFO? Ending inventory Income tax payable",
+    "subject": "professional_accounting",
+    "choices": [
+      "Lower Lower",
+      "Higher Higher",
+      "Lower Higher",
+      "Higher Lower"
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "Which of the following is most likely an example of production inputs that can be adjusted in the long run, but not in the short run?",
+    "subject": "high_school_microeconomics",
+    "choices": [
+      "Amount of wood used to make a desk.",
+      "Number of pickles put on a sandwich.",
+      "The size of a McDonald’s kitchen.",
+      "Number of teacher’s assistants in local high schools."
+    ],
+    "answer_letter": "C",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  },
+  {
+    "question": "A teenage male was on trial on charges of illegally entering an owner's property and stealing a car. The witness can only confirm for the prosecution that a car was stolen, the model and type of car, and that it was missing from the property on a certain date. The defense asks witness \"isn't it possible that my client did not steal the car, that someone else did it, and that the police are lying about the charges against him? The prosecution objected to the question. Will the court likely sustain the objection?",
+    "subject": "professional_law",
+    "choices": [
+      "Yes, because this is an objectionable question based on pure speculation.",
+      "Yes, because it is not permissible to question the credibility of the police without substantial supporting evidence.",
+      "No, questioning about the possibility of other perpetrators, or about police misconduct, is always permissible.",
+      "No, because the witness may know something that he is not revealing and for that reason, a cross-examiner is given wide latitude in questioning."
+    ],
+    "answer_letter": "A",
+    "info": {
+      "source": "cais/mmlu (config=all, split=test)",
+      "pilot": true
+    }
+  }
+]

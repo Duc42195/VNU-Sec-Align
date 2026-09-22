@@ -1,0 +1,16 @@
+{
+  "llama_3_1_8b_instruct": {
+    "n": 50,
+    "vn_asr_sep_instructed": 0.34,
+    "vn_sep_clean_witness_leak_rate": 0.0,
+    "en_asr_reference": 0.875,
+    "vn_minus_en_asr": -0.535
+  },
+  "meta_secalign_8b": {
+    "n": 50,
+    "vn_asr_sep_instructed": 0.0,
+    "vn_sep_clean_witness_leak_rate": 0.0,
+    "en_asr_reference": 0.05,
+    "vn_minus_en_asr": -0.05
+  }
+}

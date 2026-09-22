@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(tools/pod_setup/*.sh)",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"{\\\"systemMessage\\\": \\\"Nhắc: vừa sửa $f — kiểm tra tools/pod_setup/manual.md có cần cập nhật theo không (quy trình/lệnh/troubleshooting).\\\", \\\"hookSpecificOutput\\\": {\\\"hookEventName\\\": \\\"PostToolUse\\\", \\\"additionalContext\\\": \\\"Reminder: tools/pod_setup/manual.md may need a matching update after this edit to $f.\\\"}}\"; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

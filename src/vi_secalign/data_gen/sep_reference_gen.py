@@ -37,8 +37,9 @@ import time
 
 from vi_secalign.config import EXTERNAL_ROOT
 from vi_secalign.data_gen import meta_bridge
+from vi_secalign.models.registry import get as get_model
 
-REFERENCE_GENERATOR_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
+REFERENCE_GENERATOR_MODEL = get_model("llama3_8b_instruct_sep_reference").source
 OUT_NAME = "SEP_dataset_test.json"
 OUT_NAME_REF = f"SEP_dataset_test_{REFERENCE_GENERATOR_MODEL.split('/')[-1]}.json"
 

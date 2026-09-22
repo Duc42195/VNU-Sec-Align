@@ -70,6 +70,14 @@ REGISTRY: dict[str, ModelSpec] = {
         source=str(CHECKPOINTS_ROOT / "phase2_final"),
         role="This project's final LoRA adapter after Phase 2 (10 novel attack vectors) fine-tuning.",
     ),
+    "llama3_8b_instruct_sep_reference": ModelSpec(
+        name="llama3_8b_instruct_sep_reference",
+        source="meta-llama/Meta-Llama-3-8B-Instruct",
+        role="NOT an evaluated model -- 'referee' used only by data_gen/sep_reference_gen.py to "
+        "self-generate clean (non-injected) reference answers for the SEP benchmark, matching "
+        "external/meta_secalign/setup.py:565-604's own methodology verbatim. Needed once per pod "
+        "before T1-T3's run_sep() will work.",
+    ),
 }
 
 

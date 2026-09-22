@@ -119,7 +119,7 @@ cp -r "$CACHE_DIR/meta_secalign_data/." ~/repo/external/meta_secalign/data/
 # model/data thô -- xem docstring tools/pod_setup/fetch_meta_secalign_data_urls.py).
 python3 ~/repo/tools/pod_setup/fetch_meta_secalign_data_urls.py
 
-echo "=== [5/5] (Tuỳ chọn) Tải sẵn 4 model — chạy tay dòng nào cần ==="
+echo "=== [5/5] (Tuỳ chọn) Tải sẵn model — chạy tay dòng nào cần ==="
 # Đã login HF ở bước [3/5] (cần sớm hơn để tải chính cache riêng tư) -- không cần login lại ở đây.
 # Lưu ý disk thật (2026-09-22, xem .agents/infra_handoff.md): pod ckey.vn đang thuê chỉ có
 # ~73GB tổng / ~50GB trống, KHÔNG phải 100GB. Đủ cho model 8B (kể cả giữ 2 bản 4-bit cùng lúc)
@@ -131,6 +131,9 @@ cat << 'EOF'
 #   python3 -c "from huggingface_hub import snapshot_download; snapshot_download('facebook/Meta-SecAlign-8B', local_dir='~/models/meta_secalign_8b')"
 #   python3 -c "from huggingface_hub import snapshot_download; snapshot_download('SeaLLMs/SeaLLMs-v3-7B-Chat', local_dir='~/models/seallm_v3_7b_chat')"
 #   python3 -c "from huggingface_hub import snapshot_download; snapshot_download('Jason-42195/VNU-SecAlign', local_dir='~/models/jason_v1')"
+#   # "Trọng tài" cho sep_reference_gen.py (T1-T3), KHÔNG phải model đang đánh giá -- xem
+#   # docstring sep_reference_gen.py. Chỉ cần tải nếu chạy script đó:
+#   python3 -c "from huggingface_hub import snapshot_download; snapshot_download('meta-llama/Meta-Llama-3-8B-Instruct', local_dir='~/models/llama3_8b_instruct')"
 EOF
 
 echo "SETUP_DONE — kiểm tra 'python3 -c \"import torch; print(torch.cuda.is_available())\"' trước khi chạy T1-T3."

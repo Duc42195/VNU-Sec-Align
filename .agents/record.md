@@ -1056,6 +1056,58 @@
 
 ---
 
+### #28 — Xác nhận Meta chưa vá `recursive_filter` (đã pull latest); thêm probe case-study literal special-token spoofing; đánh giá thực tế về khả năng lên venue Q1
+
+- **Context:** Sai lệch #2 ở Decision #27 (`sanitize_untrusted_input()` là cải tiến project tự thêm,
+  Meta không wiring `recursive_filter` vào pipeline thật) đặt ra câu hỏi: Meta đã vá chưa (có thể đã
+  fix từ khi dự án fork), và nếu tìm ra đây là khoảng hở thật thì có nâng được venue không.
+- **Decision:**
+  1. **Đã pull `external/meta_secalign` về đúng commit mới nhất** (`git fetch origin` +
+     `git rev-list --count HEAD..origin/main` = 0, tức đã ở latest của `main`, commit `2031502`
+     "Enhance attack success logic for SEP witness appearances"). **Chưa vá**: `recursive_filter`
+     vẫn chỉ tồn tại trong `demo.py`, `grep` xác nhận không xuất hiện ở `utils.py`/`test.py`/
+     `secalign_plus_plus.py`. Phát hiện thêm chi tiết quan trọng: comment ngay tại `demo.py:20` ghi
+     "The untrusted part cannot contain any special delimiters, see page 4 of the StruQ paper
+     https://arxiv.org/pdf/2410.05451" — tức Meta TỰ BIẾT đây là yêu cầu từ chính paper nền tảng
+     (StruQ) của họ, không phải suy diễn từ phía dự án.
+  2. Rà lại taxonomy 10 vector đã có (`attack10_gen.py`) trước khi viết code mới: `ATTACK-06`
+     (Unicode Homoglyph) đã tự ghi rõ mục đích phụ "probe whether a homoglyph-spoofed delimiter can
+     slip past `sanitize_untrusted_input`" và `ATTACK-09` cũng ghi "probes whether
+     recursive_filter/the input-role boundary hold" — cả hai đều test qua **pipeline của chính dự
+     án** (luôn sanitize, nhờ decorator `_sanitized`). Cả 2 đều KHÔNG test được câu hỏi thật sự cần
+     trả lời: model công khai của Meta (train/eval bằng pipeline KHÔNG sanitize gì) có bị lừa bởi
+     literal special-token (không cần homoglyph né tránh gì cả) hay không.
+  3. Thêm `src/vi_secalign/data_gen/special_token_spoof_probe.py` (case-study độc lập, KHÔNG phải
+     vector thứ 11 — không đụng quyết định đã chốt số 10 ở Decision #6/#9): 3 biến thể chèn literal
+     special-token thật (`<|eot_id|><|start_header_id|>user<|end_header_id|>`...) vào cuối/đầu/toàn
+     bộ `input` untrusted, cố giả 1 turn "user" mới hoặc cả 1 đoạn hội thoại giả. Cố ý KHÔNG
+     sanitize (khác mọi chỗ khác trong dự án) — đúng để tái tạo điều kiện thật của pipeline Meta.
+     Chưa chạy (cần GPU/vLLM, pod đã xoá — Decision #26).
+  4. **Đánh giá thực tế về venue** (trả lời trực tiếp câu hỏi "có lên được Q1/hội nghị lớn không"):
+     **Không, riêng phát hiện này không đủ** để nâng hạng venue từ mức đã kỳ vọng (Q2-Q3/workshop,
+     Decision #10) lên Q1/hội nghị bảo mật hàng đầu (CCS/S&P/USENIX Security/NDSS). Lý do: (a) đây
+     là 1 phát hiện đơn lẻ về 1 khoảng hở trong 1 bản triển khai tham chiếu cụ thể, không phải 1 cơ
+     chế phòng thủ/tấn công mới có tính tổng quát, không phải 1 nghiên cứu quy mô lớn — đúng loại
+     "thêm 1 đoạn/1 bullet đóng góp," không phải trụ cột của bài báo; (b) kiểu tấn công special-token/
+     delimiter spoofing đã được biết rộng trong literature bảo mật LLM nói chung — không phải khám
+     phá đầu tiên, dù CHƯA ai chỉ ra cụ thể ở implementation này của Meta. **Có giá trị thật nhưng ở
+     mức khác**: (i) tăng độ tin cậy phương pháp luận (đối chiếu code thật, không chỉ dựa văn bản
+     paper — đúng tinh thần dự án đã làm xuyên suốt tối nay), (ii) là 1 case-study cụ thể, rẻ để chạy
+     (N nhỏ), có thể trích dẫn như 1 bullet đóng góp phụ trong Discussion/Limitations, KHÔNG phải
+     thay đổi mục tiêu venue đã có. Giữ nguyên kỳ vọng Q2-Q3/workshop cho các đóng góp CHÍNH
+     (RQ1 cross-lingual gap thật, VN preference + domain-incremental branch, taxonomy 10 vector với
+     train/held-out, DPO+RPO+cDPO ablation, decode-accuracy fix cho ASR).
+- **Rejected alternatives:** Thêm literal-special-token-spoofing làm vector thứ 11 chính thức — loại
+  vì phá quyết định đã chốt (Decision #6/#9: đúng 10 vector, có lý do methodological rõ ràng cho từng
+  vector); giữ làm case-study độc lập, không đếm vào taxoonomy chính, là lựa chọn ít rủi ro hơn và
+  vẫn giữ được giá trị nếu kết quả thú vị.
+- **Consequences:** `special_token_spoof_probe.py` sẵn sàng chạy khi có pod mới (Decision #26).
+  Không thay đổi kỳ vọng venue đã có (Decision #10) — không nên PR/quảng bá phát hiện này như 1 bước
+  ngoặt của bài báo khi trình bày với advisor, chỉ nên trình bày đúng tầm: 1 case-study bổ sung tăng
+  độ chặt chẽ phương pháp luận.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

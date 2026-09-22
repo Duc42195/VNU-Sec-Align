@@ -80,6 +80,11 @@ print('vllm', vllm.__version__)
 
 echo "=== [4/6] Chép data nhỏ (SEP/CyberSecEval2/InjecAgent/...) vào đúng chỗ setup.py cũ trỏ tới ==="
 cp -r "$CACHE_DIR/meta_secalign_data/." ~/repo/external/meta_secalign/data/
+# Sinh data/CySE_prompt_injections.json từ prompt_injection.json đã có sẵn trong cache (CPU
+# thuần, không cần mạng) -- cần cho run_cyberseceval2_pi_subtask() ở meta_eval_runner.py
+# (2026-09-22: phát hiện thiếu bước này khi rà lại những gì setup.py gốc làm ngoài phần tải
+# model/data thô -- xem docstring tools/pod_setup/fetch_meta_secalign_data_urls.py).
+python3 ~/repo/tools/pod_setup/fetch_meta_secalign_data_urls.py
 
 echo "=== [5/6] Đăng nhập HF để tải model gated (Llama-3.1-8B-Instruct, Meta-SecAlign-8B) ==="
 if [ -z "${HF_TOKEN:-}" ]; then

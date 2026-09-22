@@ -10,6 +10,16 @@
             "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"{\\\"systemMessage\\\": \\\"Nhắc: vừa sửa $f — kiểm tra tools/pod_setup/manual.md có cần cập nhật theo không (quy trình/lệnh/troubleshooting).\\\", \\\"hookSpecificOutput\\\": {\\\"hookEventName\\\": \\\"PostToolUse\\\", \\\"additionalContext\\\": \\\"Reminder: tools/pod_setup/manual.md may need a matching update after this edit to $f.\\\"}}\"; } 2>/dev/null || true"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(src/vi_secalign/models/registry.py)",
+            "command": "echo '{\"systemMessage\": \"Nhắc: vừa sửa registry.py — nếu vừa thêm model mới, kiểm tra đã xin quyền (gated access) trên Hugging Face cho model đó chưa trước khi dùng trên pod.\", \"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"additionalContext\": \"Reminder: if a new HF model id was just added to registry.py, verify gated access has been requested/approved on huggingface.co before using it on a pod.\"}}' 2>/dev/null || true"
+          }
+        ]
       }
     ]
   }

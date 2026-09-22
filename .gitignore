@@ -19,3 +19,6 @@ archive/legacy_duplicate_results/*.zip
 
 # OS/editor
 .DS_Store
+
+# Scratch dir for tools/pod_setup/build_env_cache.sh (avoids tmpfs /tmp, see script comment)
+.tmp_env_cache_build/

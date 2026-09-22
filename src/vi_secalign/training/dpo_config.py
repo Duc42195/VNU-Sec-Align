@@ -46,6 +46,7 @@ def build_dpo_config(
     learning_rate: float | None = None,
     save_steps: int = 200,
     save_total_limit: int = 3,
+    max_length: int | None = None,
 ):
     """Build a trl.DPOConfig for one arm of the DPO vs DPO+RPO vs DPO+RPO+cDPO ablation.
 
@@ -92,7 +93,13 @@ def build_dpo_config(
         learning_rate=learning_rate if learning_rate is not None else ANCHOR_HYPERPARAMS["learning_rate"],
         num_train_epochs=ANCHOR_HYPERPARAMS["epochs"],
         max_prompt_length=MAX_PROMPT_LENGTH,
-        max_length=MAX_LENGTH,
+        # Overridable below MAX_LENGTH=2048 (the cited Meta anchor value) for GPU-constrained runs --
+        # confirmed on the pod (24GB-class card): even at batch_size=1 + working gradient checkpointing,
+        # a batch that happens to contain one of the longer VN preference samples (~99.9th percentile
+        # near 1960 tokens, see vi_preference_gen.py's own length-percentile printout) can still OOM
+        # with as little as ~1.5GB headroom. This is a real hardware constraint, not a methodology
+        # choice -- cite the effective value actually used for a given run, not this default.
+        max_length=max_length if max_length is not None else MAX_LENGTH,
         rpo_alpha=rpo_alpha,
         label_smoothing=label_smoothing,
         beta=0.1,  # both SecAlign papers use the DPO-default beta=0.1

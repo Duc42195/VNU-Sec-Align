@@ -54,6 +54,7 @@ def train(
     learning_rate: float | None = None,
     resume_from_checkpoint: str | None = None,
     upload_checkpoints: bool = True,
+    max_length: int | None = None,
 ):
     import torch  # deferred: heavy dependency
     from datasets import load_dataset  # deferred: heavy dependency
@@ -83,7 +84,9 @@ def train(
     dataset = load_dataset("json", data_files=preference_data_path, split="train")
 
     lora_config = build_lora_config(target=lora_target)
-    dpo_config = build_dpo_config(variant, output_dir=output_dir, learning_rate=learning_rate)
+    dpo_config = build_dpo_config(
+        variant, output_dir=output_dir, learning_rate=learning_rate, max_length=max_length,
+    )
 
     callbacks = [_make_upload_on_save_callback(f"train_dpo/{variant}")] if upload_checkpoints else []
     trainer = DPOTrainer(
@@ -127,6 +130,12 @@ def main() -> None:
         help="Skip auto-uploading each checkpoint-<step>/ (and the final model) to Hugging Face "
         "(see hf_sync.py). Uploads by default -- needed for the 24h pod rental cap to be survivable.",
     )
+    parser.add_argument(
+        "--max_length", type=int, default=None,
+        help="Override DPOConfig's max_length (default: config.MAX_LENGTH=2048, the cited Meta "
+        "anchor value). Lower this on a memory-constrained GPU -- see dpo_config.py's build_dpo_config "
+        "docstring for why 2048 can OOM a 24GB-class card even at batch_size=1.",
+    )
     args = parser.parse_args()
 
     train(
@@ -138,6 +147,7 @@ def main() -> None:
         learning_rate=args.learning_rate,
         resume_from_checkpoint=args.resume_from_checkpoint,
         upload_checkpoints=args.upload_checkpoints,
+        max_length=args.max_length,
     )
 
 

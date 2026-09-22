@@ -32,6 +32,21 @@
 3. Clone repo: `~/repo` — **lưu ý: nhánh trên GitHub tên là `main`, không phải `clean-main`**
    (`clean-main` chỉ là tên nhánh cục bộ trên máy local của user, đã push lên remote `main`).
    Submodule `external/meta_secalign` đã init xong.
+4. **(2026-09-22) `sep_reference_gen.py` chạy xong full 9160/9160 mẫu SEP** — log:
+   `results/pod_logs/sep_gen.txt`. Đây là bước bắt buộc trước T1-T3's `run_sep()` (Meta không ship
+   sẵn reference output, tự sinh bằng `meta-llama/Meta-Llama-3-8B-Instruct` qua vLLM, đúng
+   `external/meta_secalign/setup.py:565-604`).
+   - **Throughput thật đo được** (dùng để ước lượng N cho T8, xem record.md Decision #21/#22):
+     model 8B qua vLLM, KV-cache-bound (~4.97GiB khả dụng sau khi load model → concurrency ~5x),
+     **3.23 prompt/s** sinh thuần (9160 prompt / 47 phút 14 giây); cộng ~5 phút load+init model lần
+     đầu (phần lớn là tải weight, cache lại thì nhanh hơn nhiều các lần sau) → tổng ~52-53 phút cho
+     9160 prompt (1 generation/prompt).
+   - Ngoại suy ban đầu cho `vi_preference_gen.py` từ số SEP này (~3.23 prompt/s, khác script/corpus)
+     **đã bị thay bằng số đo THẬT trên chính script đó** — xem `record.md` Decision #23: chạy thật
+     `--n_samples 200` cho kết quả **2.351 samples/s** (200 mẫu / 85.1s, log
+     `results/pod_logs/vi_preference.txt`). Dùng số này (không phải số ngoại suy từ SEP) để ước
+     lượng N cuối cho T9: N=12.5K (giữa khoảng 10-15K đã chốt, Decision #21) ≈ 12500/2.351 ≈
+     **~1h29m sinh thuần** — dư dả trong giới hạn 24h/lượt của pod.
 
 ## Đang chạy / cần kiểm tra lại khi mở session mới
 

@@ -230,6 +230,23 @@ xác chưa xác minh lại được.
   tục từ tiến độ đã lưu; `train_dpo.py`/`dpo_config.py` dùng cơ chế checkpoint sẵn có của HF Trainer
   (`save_steps`, `--resume_from_checkpoint`). Upload/download giữa các lượt thuê vẫn là thao tác thủ
   công qua `tools/hf_upload/*.py`, chưa tự động hoá.
+- **Ràng buộc hạ tầng — 1×RTX 3090 24GB thay vì 4×A100 80GB của Meta (Decision #24):** cần phân
+  biệt rõ 3 loại tham số khi so sánh với recipe gốc, không gộp chung thành "khác Meta":
+  1. **Giữ nguyên được** (thuật toán, độc lập phần cứng): LoRA `r=64/alpha=8/dropout=0.1`,
+     `target_modules`, `learning_rate=1.6e-4`, `epochs=3`, DPO `beta=0.1`, `dtype=bf16` (RTX 3090 —
+     Ampere, hỗ trợ bf16 native), optimizer/scheduler, `max_seq_len=2048`.
+  2. **Giữ được kết quả qua đường khác** (effective-equivalent, không phải xấp xỉ): effective batch
+     size = 32 — Meta đạt bằng `batch_size=2×grad_accum=16` **trên mỗi GPU** (đa-GPU); dự án dùng
+     `batch_size=1×grad_accum=32` trên 1 GPU (OOM thật đã xác nhận ở batch_size=2, do `DPOTrainer`
+     cần 2 forward pass/step — policy + reference log-prob — dồn lên cùng 1 card). Về toán học,
+     gradient accumulation cho ra đúng gradient tổng hợp như 1 batch thật cùng kích thước (không có
+     phép toán phụ thuộc thống kê mini-batch trong LoRA/DPO) — nên `learning_rate` không cần đổi.
+  3. **Không giữ được — khoá cứng bởi phần cứng**: số GPU/song song hoá thật; **wall-clock thời gian
+     train** (cùng số optimizer step lý thuyết, nhưng chậm hơn nhiều lần vì RTX 3090 ~35.6 TFLOPS
+     BF16 vs A100 80GB ~312 TFLOPS, và không chạy song song 4 card) — nêu rõ đây là hệ quả tốc độ,
+     không phải sai lệch phương pháp. Dự phòng nếu vẫn OOM (chưa cần dùng): QLoRA 4-bit — nếu phải
+     dùng, đây MỚI là khác biệt thật so với Meta (họ dùng bf16 full-precision, không lượng tử hoá),
+     cần ghi rõ nếu xảy ra.
 - Kết quả thực nghiệm so sánh trực tiếp với checkpoint công khai `Meta-SecAlign-8B` ở cùng quy mô
   8B (không suy diễn từ số liệu 70B).
 - Taxonomy 10 vector tấn công với train/held-out tách bạch, quy trình chống leakage.

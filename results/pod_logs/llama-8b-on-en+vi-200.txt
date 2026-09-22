@@ -1,0 +1,62 @@
+(venv) root@O-2180135:~/repo# cd ~/repo && git pull
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+PYTHONPATH=src python3 -m vi_secalign.training.train_dpo \
+  --variant dpo \
+  --base_model meta-llama/Llama-3.1-8B-Instruct \
+  --preference_data_path data/preference/vn_preference_test200.jsonl \
+  --output_dir checkpoints/test_dpo_vn200 \
+  --max_length 1536
+remote: Enumerating objects: 11, done.
+remote: Counting objects: 100% (11/11), done.
+remote: Compressing objects: 100% (1/1), done.
+remote: Total 6 (delta 4), reused 6 (delta 4), pack-reused 0 (from 0)
+Unpacking objects: 100% (6/6), 1.27 KiB | 324.00 KiB/s, done.
+From https://github.com/Duc42195/VNU-Sec-Align
+   047cb56..f901c87  main       -> origin/main
+Updating 047cb56..f901c87
+Fast-forward
+ src/vi_secalign/training/dpo_config.py | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+Loading checkpoint shards: 100%|███████████████████████| 4/4 [00:00<00:00, 140.37it/s]
+The tokenizer has new PAD/BOS/EOS tokens that differ from the model config and generation config. The model config and generation config were aligned accordingly, being updated with the tokenizer's values. Updated tokens: {'eos_token_id': 128009, 'pad_token_id': 128009}.
+Train dataset reference log probs: 100%|████████████| 200/200 [02:10<00:00,  1.53it/s]
+wandb: Using wandb-core as the SDK backend. Please refer to https://wandb.me/wandb-core for more information.
+wandb: (1) Create a W&B account
+wandb: (2) Use an existing W&B account
+wandb: (3) Don't visualize my results
+wandb: Enter your choice: 3
+wandb: You chose "Don't visualize my results"
+wandb: Tracking run with wandb version 0.18.5
+wandb: W&B syncing is set to `offline` in this directory.  
+wandb: Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+{'loss': 0.4393, 'grad_norm': 0.39855337142944336, 'learning_rate': 9.142857142857143e-05, 'rewards/chosen': 0.030366363003849983, 'rewards/rejected': -1.012355923652649, 'rewards/accuracies': 0.8344594836235046, 'rewards/margins': 1.042722463607788, 'logps/chosen': -131.1963348388672, 'logps/rejected': -169.09231567382812, 'logits/chosen': 0.1377841681241989, 'logits/rejected': 0.1082964614033699, 'epoch': 1.48}
+{'loss': 0.0662, 'grad_norm': 0.13222350180149078, 'learning_rate': 1.523809523809524e-05, 'rewards/chosen': 0.14149044454097748, 'rewards/rejected': -5.099949836730957, 'rewards/accuracies': 0.9864864945411682, 'rewards/margins': 5.241440296173096, 'logps/chosen': -141.09121704101562, 'logps/rejected': -202.9986572265625, 'logits/chosen': 0.33086392283439636, 'logits/rejected': 0.22077856957912445, 'epoch': 2.96}
+100%|█████████████████████████████████████████████████| 21/21 [11:30<00:00, 28.93s/it]wandb: WARNING URL not available in offline run
+Processing Files (6 / 6)      : 100%|████████████████████| 1.70GB / 1.70GB, 6.83MB/s  
+New Data Upload               : 100%|████████████████████| 1.69GB / 1.69GB, 6.83MB/s  
+  ...ckpoint-21/tokenizer.json: 100%|████████████████████| 17.2MB / 17.2MB            
+  ...heckpoint-21/optimizer.pt: 100%|████████████████████| 1.12GB / 1.12GB            
+  ...eckpoint-21/rng_state.pth: 100%|████████████████████| 14.6kB / 14.6kB            
+  ...adapter_model.safetensors: 100%|████████████████████|  562MB /  562MB            
+  ...heckpoint-21/scheduler.pt: 100%|████████████████████| 1.47kB / 1.47kB            
+  ...oint-21/training_args.bin: 100%|████████████████████| 6.80kB / 6.80kB            
+[hf_sync] Uploaded checkpoints/test_dpo_vn200/checkpoint-21 -> Jason-42195/VNU-SecAlign:pod_outputs/train_dpo/dpo/checkpoint-21
+{'train_runtime': 744.8686, 'train_samples_per_second': 0.806, 'train_steps_per_second': 0.028, 'train_loss': 0.24271466015350251, 'epoch': 3.0}
+100%|█████████████████████████████████████████████████| 21/21 [12:21<00:00, 35.33s/it]
+Processing Files (9 / 9)      : 100%|████████████████████| 2.28GB / 2.28GB,  345MB/s  
+New Data Upload               : |                        |  0.00B /  0.00B,  0.00B/s  
+  ...oint-21/training_args.bin: 100%|████████████████████| 6.80kB / 6.80kB            
+  ...eckpoint-21/rng_state.pth: 100%|████████████████████| 14.6kB / 14.6kB            
+  ...o_vn200/training_args.bin: 100%|████████████████████| 6.80kB / 6.80kB            
+  ...heckpoint-21/scheduler.pt: 100%|████████████████████| 1.47kB / 1.47kB            
+  ...heckpoint-21/optimizer.pt: 100%|████████████████████| 1.12GB / 1.12GB            
+  ..._dpo_vn200/tokenizer.json: 100%|████████████████████| 17.2MB / 17.2MB            
+  ...ckpoint-21/tokenizer.json: 100%|████████████████████| 17.2MB / 17.2MB            
+  ...adapter_model.safetensors: 100%|████████████████████|  562MB /  562MB            
+  ...adapter_model.safetensors: 100%|████████████████████|  562MB /  562MB            
+[hf_sync] Uploaded checkpoints/test_dpo_vn200 -> Jason-42195/VNU-SecAlign:pod_outputs/train_dpo/dpo_final/test_dpo_vn200
+wandb:
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /root/repo/wandb/offline-run-20260922_171059-0bkbfk8u
+wandb: Find logs at: wandb/offline-run-20260922_171059-0bkbfk8u/logs
+(venv) root@O-2180135:~/repo# 

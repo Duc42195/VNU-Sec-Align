@@ -830,6 +830,94 @@
 
 ---
 
+### #24 — Đối chiếu tường minh hyperparameter Meta (4×A100 80GB) vs hạ tầng thật của dự án (1×RTX 3090 24GB): cái gì giữ nguyên được, cái gì buộc phải đổi
+
+- **Context:** Người dùng hỏi trực tiếp: dùng 1×3090 thay vì 4×A100 của Meta, cần giữ thông số
+  giống nhau nhất có thể — cái nào giữ được, cái nào không, cần giải thích rõ. Đây là câu hỏi
+  phương pháp luận quan trọng (ảnh hưởng tính so sánh được của kết quả với `Meta-SecAlign-8B`),
+  cần tách bạch rõ 3 loại: (a) hyperparameter thuần thuật toán — độc lập phần cứng, giữ nguyên
+  được; (b) tham số bị đổi CÁCH ĐẠT ĐƯỢC nhưng giữ nguyên KẾT QUẢ hiệu dụng (effective-equivalent,
+  không phải xấp xỉ); (c) thứ thật sự bị khoá cứng bởi VRAM/số GPU, không giữ được.
+- **Decision:**
+  1. **Giữ nguyên (không phụ thuộc phần cứng)**: LoRA `r=64/alpha=8/dropout=0.1`, `target_modules`
+     (q/v/gate/up/down_proj), `learning_rate=1.6e-4`, `epochs=3`, DPO `beta=0.1`, `dtype=bf16`
+     (RTX 3090 — kiến trúc Ampere, compute capability 8.6 — hỗ trợ bf16 native, không cần fallback),
+     optimizer AdamW/`weight_decay=0`/cosine scheduler không warmup, `max_seq_len=2048`/
+     `MAX_PROMPT_LENGTH=384` (giữ được hiện tại, là ứng viên đầu tiên phải giảm nếu vẫn OOM).
+  2. **Giữ được KẾT QUẢ qua đường khác (effective-equivalent)**: effective batch size = 32. Meta đạt
+     bằng `batch_size=2 × grad_accum=16` **trên mỗi GPU** (đa-GPU, `helpers/llama3.1_8B_lora.yaml:78,80`).
+     Dự án không thể chạy `batch_size=2` trên 1×24GB — `DPOTrainer` cần 2 forward pass/step (policy +
+     reference log-prob với adapter tắt) dồn hết lên cùng 1 card thay vì song song ra nhiều card;
+     OOM thật đã xác nhận trên pod ở `batch_size=2` (23.5/23.56GB dùng hết, lỗi đúng trong ref-pass).
+     Hạ xuống `batch_size=1, grad_accum=32` để giữ effective batch=32 — **về toán học đây là tương
+     đương, không phải xấp xỉ**: gradient accumulation cộng dồn gradient qua 32 mini-batch kích
+     thước 1 trước khi update, cho ra đúng gradient tổng hợp như 1 batch thật kích thước 32 (LoRA/DPO
+     không có phép toán phụ thuộc thống kê mini-batch như batchnorm) — sai số chỉ ở thứ tự tổng hợp
+     dấu phẩy động, không đáng kể. Vì effective batch giữ nguyên, `learning_rate` KHÔNG cần đổi theo
+     "linear scaling rule".
+  3. **Không giữ được — khoá cứng bởi phần cứng**: (a) số GPU/song song hoá thật (Meta đa-GPU qua
+     torchtune `lora_dpo_distributed`, tối thiểu 2 theo yaml, paper gốc CCS'25 dùng 4×A100 — dự án
+     chỉ 1 GPU đơn, TRL `DPOTrainer` chạy tuần tự); (b) **wall-clock thời gian train** — dù cùng
+     effective batch + epoch (cùng SỐ optimizer step lý thuyết), thời gian THẬT để chạy hết số step
+     đó chắc chắn lâu hơn nhiều lần (RTX 3090 ~35.6 TFLOPS BF16 dense vs A100 80GB ~312 TFLOPS BF16
+     tensor core, ~8.7× yếu hơn, cộng không có 4 card chạy song song) — đây là hệ quả tốc độ cần nêu
+     trong Limitations, không phải sai lệch hyperparameter. (c) Dự phòng nếu vẫn OOM thêm (chưa cần
+     dùng, đã ghi sẵn trong docstring `train_dpo.py`): QLoRA 4-bit — nếu buộc phải dùng, đây MỚI
+     thực sự là khác biệt không giữ được (Meta dùng bf16 full-precision LoRA, không lượng tử hoá),
+     cần ghi rõ nếu xảy ra.
+- **Rejected alternatives:** Cố giữ `batch_size=2` như Meta bằng cách giảm `max_seq_len`/dùng QLoRA
+  ngay từ đầu để né OOM — loại, vì `batch_size=1 + grad_accum=32` đã giải quyết OOM mà KHÔNG cần
+  đánh đổi thêm (giữ nguyên full-precision bf16 và max_seq_len=2048), nên chưa có lý do dùng biện
+  pháp mạnh hơn trước khi thật sự cần.
+- **Consequences:** Không cần sửa code thêm (các giá trị này đã đúng trong `ANCHOR_HYPERPARAMS`/
+  `dpo_config.py` từ trước, xem Decision #23) — entry này chỉ tường minh hoá LÝ DO và PHÂN LOẠI rõ
+  ràng để trích dẫn đúng khi viết Limitations của bản thảo cuối, tránh người đọc hiểu nhầm khác biệt
+  hardware là khác biệt phương pháp. `proposal.md` cần thêm đoạn Limitations tương ứng.
+
+---
+
+### #25 — `train_dpo.py` chạy thành công thật lần đầu (N=200, `--max_length 1536`); thêm `precompute_ref_log_probs=True` sau 4 vòng OOM liên tiếp; số liệu throughput thật để ước lượng N cho T9
+
+- **Context:** Sau Decision #23/#24 (dtype bf16, batch_size=1/grad_accum=32, pad_token, max_length
+  override), chạy thật trên pod vẫn OOM 2 lần liên tiếp đúng tại `DPOTrainer.compute_ref_log_probs`
+  (dòng lỗi `accelerate/utils/operations.py::_convert_to_fp32`) — kể cả sau khi `batch_size=1` +
+  gradient checkpointing đã hoạt động đúng (`model.enable_input_require_grads()` +
+  `gradient_checkpointing_kwargs={"use_reentrant": False}`, sửa cùng đợt vì log có cảnh báo
+  `None of the inputs have requires_grad=True` — dấu hiệu kinh điển checkpointing vô tác dụng khi
+  base model bị freeze). Nguyên nhân gốc: `DPOTrainer` (không có `ref_model` riêng, dùng chung base
+  model + tắt adapter) chạy **forward pass thứ hai** để tính reference log-probs **bên trong mỗi
+  training step**, chồng lên bộ nhớ policy forward+backward — không liên quan gì đến `batch_size`
+  hay `max_length`, nên hạ 2 tham số đó không giải quyết dứt điểm (chỉ trì hoãn OOM tới step sau).
+- **Decision:** Bật `precompute_ref_log_probs=True` trong `build_dpo_config` — TRL tính log-probs
+  tham chiếu **1 lần cho toàn bộ dataset trước khi vào training loop** (log thật: `Train dataset
+  reference log probs: 100%|...| 200/200 [02:10<00:00, 1.53it/s]`), tách hẳn khỏi bộ nhớ per-step.
+  Chạy thật thành công ngay sau đó, không OOM nữa. Kết quả training thật (N=200, 3 epoch, 21 step,
+  `--max_length 1536`, `batch_size=1`/`grad_accum=32`):
+  - loss giảm 0.439 (step~10, epoch 1.48) → 0.066 (step 21, epoch 2.96); `rewards/accuracies` tăng
+    83.4%→98.6%; `train_loss` trung bình cả run = 0.2427 — đúng dạng đường cong DPO hội tụ khỏe,
+    xác nhận pipeline `train_dpo.py` đúng về mặt cơ chế (chưa phải kết quả cuối cùng, N=200×3 epoch
+    dễ overfit nhẹ trên tập nhỏ).
+  - `train_runtime=744.87s` (~12.4 phút, gồm cả ~4 phút upload checkpoint-21 giữa chừng, 1.7GB —
+    upload chạy đồng bộ trong `on_save` callback, chặn training loop tới khi xong). Cộng thêm 130s
+    precompute ref log-probs → tổng ~14.6 phút end-to-end cho N=200.
+  - Checkpoint cuối đã tự upload: `Jason-42195/VNU-SecAlign:pod_outputs/train_dpo/dpo_final/test_dpo_vn200/`
+    (và `checkpoint-21` riêng lẻ tại `pod_outputs/train_dpo/dpo/checkpoint-21`).
+  - Ước lượng thô cho N=10.000 (3 epoch, cùng cấu hình 3090 này): ~7-8h train thuần + ~1.8h precompute
+    + vài lần upload checkpoint ≈ **~10 giờ tổng** — vẫn lọt 24h nhưng khá sát, dùng số này làm input
+    thật cho quyết định N cuối cùng (Decision #21 vẫn treo) và cho việc so sánh chi phí thuê GPU khác
+    (A100/A6000/RTX 5090 32GB đang khảo giá) thay vì đoán.
+- **Rejected alternatives:** QLoRA 4-bit hoặc giảm `max_length` sâu hơn nữa để né OOM — loại, vì
+  `precompute_ref_log_probs=True` giải quyết đúng nguyên nhân gốc (forward pass thứ hai chồng bộ
+  nhớ) mà KHÔNG cần đánh đổi thêm gì về precision/fidelity so với Meta.
+- **Consequences:** `train_dpo.py` xác nhận chạy được thật trên hạ tầng hiện tại (1×RTX 3090 24GB).
+  `--max_length 1536` (không phải 2048 gốc) vẫn là sai lệch cần ghi trong Limitations nếu N thật
+  dùng lại giá trị này — ưu tiên vẫn là chạy N thật trên GPU đủ VRAM cho `max_length=2048` (đang
+  khảo giá A100 40GB/A6000 48GB/RTX 5090 32GB) hơn là giữ nguyên sai lệch này cho kết quả chính thức.
+  Chưa thêm `logging_steps` nhỏ cho lần chạy thật (lần này chỉ có 2 điểm log vì tổng step ít) — cần
+  thêm nếu muốn theo dõi đường loss chi tiết hơn khi N lớn.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

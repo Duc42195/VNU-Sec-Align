@@ -73,7 +73,12 @@ def train(
     # anchor config) -- without it, from_pretrained defaults to fp32 (~32GB for an 8B model), which
     # does not fit the same pod GPU that vi_preference_gen.py's vLLM call needed max_model_len
     # capping for (see that script's fix, same 24GB-class card).
-    model = AutoModelForCausalLM.from_pretrained(base_model, dtype=torch.bfloat16)
+    # device_map="auto" makes accelerate write each shard's weights directly to GPU as it's read from
+    # disk, instead of fully materializing the ~15GB bf16 model in CPU RAM first and only THEN moving
+    # it to GPU (the default with no device_map). Some rental pods pair a big GPU with very little
+    # system RAM (e.g. a 32GB-VRAM card on a 16GB-RAM host) -- without this, loading alone could OOM
+    # the CPU before training even starts, a failure mode independent of every GPU-VRAM fix so far.
+    model = AutoModelForCausalLM.from_pretrained(base_model, dtype=torch.bfloat16, device_map="auto")
     # Required for gradient checkpointing to actually save activation memory through a frozen base
     # model + LoRA adapter -- without this, the checkpointed layers' inputs have requires_grad=False
     # (base model is frozen), so torch.utils.checkpoint can't build a backward graph through them and

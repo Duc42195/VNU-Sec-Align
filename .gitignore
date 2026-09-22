@@ -22,3 +22,12 @@ archive/legacy_duplicate_results/*.zip
 
 # Scratch dir for tools/pod_setup/build_env_cache.sh (avoids tmpfs /tmp, see script comment)
 .tmp_env_cache_build/
+
+# Pod-generated data synced down from HF (Jason-42195/VNU-SecAlign:pod_outputs/) via hf_sync.py's
+# download_output() -- source of truth is HF, this is a disposable local working copy that can grow
+# large (e.g. SEP_dataset_test*.json, tens of MB) and is trivially re-synced. Keep .gitkeep markers
+# and any small README so the folder layout itself is still documented in git.
+data/pod_synced/**
+!data/pod_synced/**/
+!data/pod_synced/**/.gitkeep
+!data/pod_synced/README.md

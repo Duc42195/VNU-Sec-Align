@@ -790,6 +790,46 @@
 
 ---
 
+### #23 — `vi_preference_gen.py --n_samples 200` chạy thật thành công (sau 3 fix ở #22); thêm `data/pod_synced/` + sửa OOM fp32 trong `train_dpo.py`
+
+- **Context:** Sau khi sửa 3 lỗi thật ở `vi_preference_gen.py` (input=None, oversample factor,
+  `max_model_len` OOM — cả 3 tìm được bằng cách chạy trực tiếp, không suy đoán), người dùng chạy lại
+  trên pod với `--n_samples 200` để làm test throughput trước khi chốt N thật cho T9 (xem Decision
+  #21). Log đầy đủ: `results/pod_logs/vi_preference.txt`. Riêng biệt: các file pod-gen được kéo về
+  máy local trước đó (`SEP_dataset_test*.json` từ Decision #22) đang nằm tạm trong
+  `results/pod_logs/` — không đúng chỗ, cần 1 folder `data/` riêng cho dữ liệu đã sync về.
+- **Decision:**
+  1. Chạy thành công: 200/200 mẫu thật (không phải 139/200 như lần test lỗi trước #22), throughput
+     đo được **2.351 samples/s** (checkpoint log dòng `Checkpointed 200/200 ... 85.1s`) — con số này
+     dùng để ước lượng thời gian thật cho N cuối cùng của T9 khi chốt (Decision #21 vẫn treo, N cụ
+     thể chưa chọn). Đã tải file `vn_preference_test200.jsonl` về, kiểm tra trực tiếp: 200 record,
+     đúng schema `prompt/chosen_input/rejected_input/chosen/rejected`, nội dung tiếng Việt hợp lý.
+  2. Tạo `data/pod_synced/<script_name>/` làm quy ước mới cho dữ liệu đã sync về từ HF (mirror của
+     `pod_outputs/<script_name>/` trên HF) — thay cho việc để lẫn trong `results/pod_logs/` (vốn chỉ
+     dành cho log text). Thêm `hf_sync.download_output()` đối xứng với `upload_output()` đã có, để
+     lần sau sync chỉ cần 1 dòng lệnh thay vì viết script tay. Thư mục này **gitignore** (trừ README
+     + `.gitkeep`) vì nguồn sự thật là HF, bản local chỉ là working copy có thể tái tạo bất kỳ lúc
+     nào và có thể khá nặng (`SEP_dataset_test*.json` ~39MB).
+  3. Phát hiện thêm 1 lỗi thật (chưa chạy nhưng đọc code thấy rõ) khi rà lại `train_dpo.py` để trả
+     lời "giờ train thử như nào": `AutoModelForCausalLM.from_pretrained(base_model)` không set dtype
+     → mặc định fp32 (~32GB cho model 8B), trong khi pod GPU cùng loại đã xác nhận chỉ có ~24GB
+     (Decision trước, vLLM OOM). Đối chiếu `external/meta_secalign/helpers/llama3.1_8B_lora.yaml:94`
+     (`dtype: bf16` — cấu hình torchtune gốc mà `ANCHOR_HYPERPARAMS` đang neo theo) xác nhận bf16 là
+     giá trị đúng cần dùng, không phải fp32 mặc định của `transformers`. Đã sửa: thêm
+     `dtype=torch.bfloat16` vào lệnh `from_pretrained`.
+- **Rejected alternatives:** Giữ nguyên `results/pod_logs/` làm nơi chứa cả log lẫn data đã sync —
+  loại vì 2 loại nội dung khác mục đích (log = lịch sử 1 lần chạy, giữ mãi; data sync = working copy
+  có thể đổi/xoá bất kỳ lúc nào), gộp chung dễ gây nhầm "data này đã được version-control" trong khi
+  thực ra chỉ log mới nên commit.
+- **Consequences:** T8 (VN preference data) giờ có 1 test run N=200 sạch, dùng được để tính throughput
+  cho quyết định N cuối cùng (Decision #21 vẫn treo — N cụ thể chưa chốt, chỉ mới có dữ liệu để tính).
+  `train_dpo.py` giờ có thể chạy thử (smoke test) trên GPU pod mà không OOM vì fp32 — **chưa chạy
+  thật**, đây là fix tìm được qua đọc code khi chuẩn bị lệnh train, chưa verify bằng cách chạy trên
+  pod (khác với 3 lỗi ở Decision #22, vốn đã verify bằng chạy thật). Cần xác nhận khi người dùng chạy
+  lệnh train thử.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

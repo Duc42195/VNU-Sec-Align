@@ -55,13 +55,24 @@ def train(
     resume_from_checkpoint: str | None = None,
     upload_checkpoints: bool = True,
 ):
+    import torch  # deferred: heavy dependency
     from datasets import load_dataset  # deferred: heavy dependency
     from transformers import AutoModelForCausalLM, AutoTokenizer  # deferred: heavy dependency
     from transformers.trainer_utils import get_last_checkpoint  # deferred: heavy dependency
     from trl import DPOTrainer  # deferred: heavy dependency
 
     tokenizer = AutoTokenizer.from_pretrained(base_model)
-    model = AutoModelForCausalLM.from_pretrained(base_model)
+    if tokenizer.pad_token is None:
+        # Llama-3.1-Instruct's tokenizer ships with no pad token (only eos/bos) -- DPOTrainer pads
+        # batches to the longest sequence and needs a real pad_token_id to do it, matching the
+        # standard Llama fallback (pad_token = eos_token; eos itself is masked out of the loss by
+        # DPOTrainer's own label handling, so reusing it as pad is safe here).
+        tokenizer.pad_token = tokenizer.eos_token
+    # dtype=bf16 matches external/meta_secalign/helpers/llama3.1_8B_lora.yaml:94 (torchtune's own
+    # anchor config) -- without it, from_pretrained defaults to fp32 (~32GB for an 8B model), which
+    # does not fit the same pod GPU that vi_preference_gen.py's vLLM call needed max_model_len
+    # capping for (see that script's fix, same 24GB-class card).
+    model = AutoModelForCausalLM.from_pretrained(base_model, dtype=torch.bfloat16)
     dataset = load_dataset("json", data_files=preference_data_path, split="train")
 
     lora_config = build_lora_config(target=lora_target)

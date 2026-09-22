@@ -103,6 +103,15 @@ def build_dpo_config(
         rpo_alpha=rpo_alpha,
         label_smoothing=label_smoothing,
         beta=0.1,  # both SecAlign papers use the DPO-default beta=0.1
+        # Without this, DPOTrainer calls compute_ref_log_probs() (a SECOND full forward pass, with
+        # the LoRA adapter disabled) inside every single training step, on top of the policy
+        # forward+backward already using most of the GPU's memory -- confirmed real OOM on the pod at
+        # exactly this call (batch_size=1, max_length=1536, working gradient checkpointing, still not
+        # enough). precompute_ref_log_probs=True instead runs that forward ONCE over the whole
+        # dataset up front (before any training-step memory is allocated) and caches the results, so
+        # steady-state training memory only ever holds the policy pass -- TRL's own documented fix for
+        # PEFT + memory-constrained single-GPU training.
+        precompute_ref_log_probs=True,
         save_strategy="steps",
         save_steps=save_steps,
         save_total_limit=save_total_limit,

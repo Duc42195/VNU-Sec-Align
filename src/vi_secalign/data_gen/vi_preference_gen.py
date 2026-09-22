@@ -101,19 +101,27 @@ def generate_vi_preference_dataset(
 
     tokenizer = load_tokenizer()
     clean_data = _load_vi_corpus(corpus_hf_id, corpus_subset)
-    injection_data = list(clean_data)  # same corpus supplies both trusted instructions and injected prompts
+    # Bactrian-X has rows where 'input' is present but literally None (not ""), not just missing --
+    # .get("input", "") only catches the latter. Filter the injection candidate pool up front so
+    # every draw from it has a real, concatenable string (fixes a real TypeError hit on-pod,
+    # 2026-09-22: "can only concatenate str (not 'NoneType') to str").
+    injection_data = [s for s in clean_data if s.get("input")]
     ref_inst_resp = {s["instruction"]: s["output"] for s in injection_data}
 
     preference_data = []
     rng = np.random.default_rng(seed)
+    # Iterate the FULL shuffled order, relying solely on the `break` below to stop once n_samples
+    # is reached -- a prior fixed "n_samples * 2" oversample factor undershot in practice (tested
+    # 2026-09-22 against the real corpus: only 139/200 for n_samples=200, seed=42) because ~63%
+    # of Bactrian-X vi rows have empty-or-None 'input' (41,777 "" + 641 None out of 67,017), well
+    # above what a flat 2x factor covers. No perf cost to not slicing -- a permutation over ~67K
+    # ints is cheap, and the loop still exits as soon as enough valid rows are found.
     order = rng.permutation(len(clean_data))
-    if n_samples is not None:
-        order = order[: n_samples * 2]  # over-sample: the empty-`input` skip below drops some
     for idx in order:
         if n_samples is not None and len(preference_data) >= n_samples:
             break
         current_sample = deepcopy(clean_data[int(idx)])
-        if current_sample.get("input", "") == "":
+        if not current_sample.get("input"):  # catches both missing key, "", and None
             continue
 
         injected_sample = injection_data[rng.integers(len(injection_data))]

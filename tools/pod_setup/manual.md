@@ -140,13 +140,23 @@ thuê, đừng tin số cũ ghi sẵn trong script — pod mới có thể khác
 `GLIBC_2.38 not found`** — `numpy==1.26.4` (pin trong `requirements.txt`) không có wheel dựng sẵn
 cho Python 3.13 trên PyPI, nên lúc build cache trên laptop, `uv` phải tự build nó từ source ngay
 trên máy đó — kết quả gắn chặt vào glibc của máy build (không portable sang pod glibc cũ hơn, vd
-Ubuntu 22.04/glibc 2.35). `pod_init.sh` đã tự động `uv pip install --reinstall numpy==1.26.4
-cupy-cuda12x==13.6.0 ray==2.50.1 vllm==0.11.0` ngay sau khi copy cache để sửa — nếu vẫn gặp lỗi
-này (ví dụ chạy tay từng phần script), chạy lại đúng lệnh đó trong venv đã activate. Dấu hiệu khác
-để nhận diện lỗi này trước khi nó xảy ra: prompt không có tiền tố `(venv)` — nghĩa là quên
-`source ~/venv/bin/activate`, dễ nhầm với lỗi glibc vì thông báo lỗi bề ngoài giống nhau (cả hai
-đều là "import numpy thất bại"), nhưng nguyên nhân khác nhau — luôn kiểm tra `which python3`/
-`python3 --version` (phải ra `~/venv/bin/python3`, `Python 3.13.x`) trước khi kết luận là lỗi glibc.
+Ubuntu 22.04/glibc 2.35). `pod_init.sh` đã tự động
+`uv pip install -r ~/repo/external/meta_secalign/requirements.txt --reinstall-package numpy` ngay
+sau khi copy cache để sửa — nếu vẫn gặp lỗi này (ví dụ chạy tay từng phần script), chạy lại đúng
+lệnh đó trong venv đã activate.
+
+**KHÔNG dùng `uv pip install --reinstall numpy==... cupy==... ray==... vllm==...` liệt kê version
+trực tiếp như vậy** (bài học thật, 2026-09-22) — thiếu `-r requirements.txt` làm `uv` tự resolve
+lại TOÀN BỘ ~148 gói theo "mới nhất tương thích", phá vỡ tổ hợp Meta đã pin (hậu quả thật gặp:
+`transformers` 4.57.1→5.17.0, `huggingface-hub` 0.36.0→1.32.0, `protobuf` 5→7 — nhảy nhiều major
+version cùng lúc). Luôn dùng `-r requirements.txt --reinstall-package <tên-gói>` để ràng buộc mọi
+gói khác giữ đúng version pin, chỉ gói được nêu tên mới bị build/tải lại.
+
+Dấu hiệu khác để nhận diện lỗi glibc trước khi kết luận nhầm: prompt không có tiền tố `(venv)` —
+nghĩa là quên `source ~/venv/bin/activate`, dễ nhầm với lỗi glibc vì thông báo lỗi bề ngoài giống
+nhau (cả hai đều là "import numpy thất bại"), nhưng nguyên nhân khác nhau — luôn kiểm tra
+`which python3`/`python3 --version` (phải ra `~/venv/bin/python3`, `Python 3.13.x`) trước khi kết
+luận là lỗi glibc.
 
 **`hf: command not found`** — không có console-script CLI (`huggingface-cli`, `hf`) qua cách cài
 này (`uv pip install --target` không tạo shim). Mọi thao tác HF đều qua Python API

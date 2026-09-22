@@ -91,8 +91,17 @@ df -h / | tail -1  # và SAU khi copy, để biết còn bao nhiêu cho model/da
 # rà `Tag:` trong .dist-info (không phải "manylinux*") nhưng xác minh lại là wheel PyPI thật (nhà
 # phát hành tự đóng gói vậy, không phải build tại chỗ) -- reinstall thêm cho chắc, không hại gì
 # nếu bản cache đã đúng sẵn (uv sẽ chỉ redownload).
-echo "=== Cài lại numpy (+cupy/ray/vllm để chắc chắn) khớp glibc thật của pod, không qua cache ==="
-uv pip install --reinstall numpy==1.26.4 cupy-cuda12x==13.6.0 ray==2.50.1 vllm==0.11.0
+#
+# QUAN TRỌNG (2026-09-22, phát hiện khi test thật trên pod): KHÔNG dùng
+# `uv pip install --reinstall numpy==... cupy==... ray==... vllm==...` trực tiếp như bản đầu của
+# fix này -- không truyền -r requirements.txt nghĩa là uv tự resolve lại TOÀN BỘ dependency graph
+# theo "mới nhất tương thích" cho mọi gói KHÔNG được nêu tên trong lệnh, phá vỡ tổ hợp version
+# Meta đã pin (hậu quả thật gặp phải: transformers 4.57.1 -> 5.17.0, huggingface-hub 0.36.0 ->
+# 1.32.0, protobuf 5->7, starlette 0->1, openai 2->3 -- toàn bộ 148 gói bị resolve lại, không chỉ
+# 4 gói cần sửa). Đúng cách: dùng `-r requirements.txt` làm ràng buộc đầy đủ, chỉ ép build lại
+# riêng numpy bằng --reinstall-package (uv giữ nguyên version mọi gói khác theo lockfile).
+echo "=== Cài lại numpy khớp glibc thật của pod (giữ nguyên mọi version khác theo requirements.txt) ==="
+uv pip install -r ~/repo/external/meta_secalign/requirements.txt --reinstall-package numpy
 
 echo "--- kiểm tra import (không phải chỉ copy xong là chắc chắn chạy được) ---"
 python3 -c "

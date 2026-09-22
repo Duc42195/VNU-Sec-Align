@@ -20,6 +20,7 @@ import os
 
 from vi_secalign.config import EXTERNAL_ROOT
 from vi_secalign.data_gen import meta_bridge
+from vi_secalign.hf_sync import upload_output
 
 
 def main() -> None:
@@ -34,6 +35,10 @@ def main() -> None:
     parser.add_argument("--model_name_or_path", required=True, help="Model used to self-generate chosen/rejected responses.")
     parser.add_argument("--no_self_generated_response", action="store_false", dest="self_generated_response", default=True)
     parser.add_argument("--no_randomized_injection_position", action="store_false", dest="randomized_injection_position", default=True)
+    parser.add_argument(
+        "--no_upload", action="store_false", dest="upload", default=True,
+        help="Skip auto-uploading the output to Hugging Face (see hf_sync.py). Uploads by default.",
+    )
     args = parser.parse_args()
 
     original_cwd = os.getcwd()
@@ -50,6 +55,9 @@ def main() -> None:
         os.chdir(original_cwd)
 
     print(f"Generated {len(dataset)} preference pairs -> {args.preference_data_path}")
+
+    if args.upload:
+        upload_output(EXTERNAL_ROOT / args.preference_data_path, "en_preference_gen")
 
 
 if __name__ == "__main__":

@@ -37,6 +37,7 @@ import time
 
 from vi_secalign.config import EXTERNAL_ROOT
 from vi_secalign.data_gen import meta_bridge
+from vi_secalign.hf_sync import upload_output
 from vi_secalign.models.registry import get as get_model
 
 REFERENCE_GENERATOR_MODEL = get_model("llama3_8b_instruct_sep_reference").source
@@ -129,6 +130,14 @@ def main() -> None:
         help="Relative to EXTERNAL_ROOT (matching setup.py's own path handling) -- default matches "
         "where fetch_meta_secalign_data_urls.py/build_env_cache.sh place everything.",
     )
+    parser.add_argument(
+        "--no_upload",
+        action="store_false",
+        dest="upload",
+        default=True,
+        help="Skip auto-uploading the output to Hugging Face (see hf_sync.py). Uploads by default "
+        "since the rented pod has a 24h rental cap -- see .agents/record.md Decision #21.",
+    )
     args = parser.parse_args()
 
     original_cwd = os.getcwd()
@@ -139,6 +148,10 @@ def main() -> None:
         os.chdir(original_cwd)
 
     print(f"Built {len(data_sft_format)} SEP test records + {len(data_reference)} reference records.")
+
+    if args.upload:
+        upload_output(EXTERNAL_ROOT / args.data_dir / OUT_NAME, "sep_reference_gen")
+        upload_output(EXTERNAL_ROOT / args.data_dir / OUT_NAME_REF, "sep_reference_gen")
 
 
 if __name__ == "__main__":

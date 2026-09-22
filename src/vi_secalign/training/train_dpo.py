@@ -24,7 +24,25 @@ from __future__ import annotations
 
 import argparse
 
+from vi_secalign.hf_sync import upload_output
 from vi_secalign.training.dpo_config import DPOVariant, build_dpo_config, build_lora_config
+
+
+def _make_upload_on_save_callback(dest_subdir: str):
+    """TrainerCallback that uploads each checkpoint-<step>/ dir to HF right after HF Trainer
+    finishes writing it (on_save fires post-write, per transformers' TrainerCallback contract) --
+    same 24h-pod-survival reasoning as vi_preference_gen.py's per-chunk upload, see hf_sync.py.
+    """
+    from transformers import TrainerCallback  # deferred: heavy dependency
+
+    class UploadOnSaveCallback(TrainerCallback):
+        def on_save(self, args, state, control, **kwargs):
+            import os
+
+            checkpoint_dir = os.path.join(args.output_dir, f"checkpoint-{state.global_step}")
+            upload_output(checkpoint_dir, dest_subdir)
+
+    return UploadOnSaveCallback()
 
 
 def train(
@@ -35,6 +53,7 @@ def train(
     lora_target: str = "8b",
     learning_rate: float | None = None,
     resume_from_checkpoint: str | None = None,
+    upload_checkpoints: bool = True,
 ):
     from datasets import load_dataset  # deferred: heavy dependency
     from transformers import AutoModelForCausalLM, AutoTokenizer  # deferred: heavy dependency
@@ -48,12 +67,14 @@ def train(
     lora_config = build_lora_config(target=lora_target)
     dpo_config = build_dpo_config(variant, output_dir=output_dir, learning_rate=learning_rate)
 
+    callbacks = [_make_upload_on_save_callback(f"train_dpo/{variant}")] if upload_checkpoints else []
     trainer = DPOTrainer(
         model=model,
         args=dpo_config,
         train_dataset=dataset,
         processing_class=tokenizer,
         peft_config=lora_config,
+        callbacks=callbacks,
     )
 
     resume = resume_from_checkpoint
@@ -63,6 +84,8 @@ def train(
         resume = get_last_checkpoint(output_dir)
     trainer.train(resume_from_checkpoint=resume)
     trainer.save_model(output_dir)
+    if upload_checkpoints:
+        upload_output(output_dir, f"train_dpo/{variant}_final")
     return output_dir
 
 
@@ -81,6 +104,11 @@ def main() -> None:
         "(safe on a fresh run too -- becomes a no-op), or an explicit checkpoint directory path. "
         "Needed because the rented pod has a 24h max rental (see .agents/infra_handoff.md).",
     )
+    parser.add_argument(
+        "--no_upload_checkpoints", action="store_false", dest="upload_checkpoints", default=True,
+        help="Skip auto-uploading each checkpoint-<step>/ (and the final model) to Hugging Face "
+        "(see hf_sync.py). Uploads by default -- needed for the 24h pod rental cap to be survivable.",
+    )
     args = parser.parse_args()
 
     train(
@@ -91,6 +119,7 @@ def main() -> None:
         lora_target=args.lora_target,
         learning_rate=args.learning_rate,
         resume_from_checkpoint=args.resume_from_checkpoint,
+        upload_checkpoints=args.upload_checkpoints,
     )
 
 

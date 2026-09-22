@@ -53,6 +53,7 @@ import numpy as np
 
 from vi_secalign.config import ANCHOR_HYPERPARAMS
 from vi_secalign.data_gen import meta_bridge
+from vi_secalign.hf_sync import upload_output
 from vi_secalign.training.chat_template import build_messages, load_tokenizer, sanitize_untrusted_input
 
 DEFAULT_CORPUS_HF_ID = "MBZUAI/Bactrian-X"
@@ -83,6 +84,7 @@ def generate_vi_preference_dataset(
     n_samples: int | None = 2000,
     seed: int = 42,
     checkpoint_every: int = 500,
+    upload_every_checkpoint: bool = True,
 ):
     """n_samples caps how many rows are drawn from the corpus BEFORE vLLM generation -- each row
     costs 2 generations (chosen+rejected) at up to max_tokens=8192, so this is the main lever on
@@ -203,10 +205,18 @@ def generate_vi_preference_dataset(
                 f"run avg: {overall_samples_per_sec:.3f} samples/s | "
                 f"ETA remaining {n_left} samples: {eta_seconds / 60:.1f} min"
             )
+            if upload_every_checkpoint:
+                # Upload after EVERY checkpoint, not just at the end -- the whole point of
+                # checkpoint_every/--resume_from_checkpoint (Decision #21) is surviving the pod's
+                # 24h rental cap, which only works if the latest checkpoint is off-pod, not just
+                # on local disk that gets wiped when the rental ends.
+                upload_output(preference_data_path, "vi_preference_gen")
         del llm, sampling_params
         preference_data = completed
     else:
         meta_bridge.jdump(preference_data, preference_data_path)
+        if upload_every_checkpoint:
+            upload_output(preference_data_path, "vi_preference_gen")
     from datasets import load_dataset
 
     dataset = load_dataset("json", data_files=preference_data_path, split="train")
@@ -228,6 +238,15 @@ def main() -> None:
     parser.add_argument("--checkpoint_every", type=int, default=500,
                          help="Flush progress to --preference_data_path every N samples (resume support -- "
                          "the rented pod has a 24h max rental, see .agents/infra_handoff.md).")
+    parser.add_argument(
+        "--no_upload",
+        action="store_false",
+        dest="upload_every_checkpoint",
+        default=True,
+        help="Skip auto-uploading each checkpoint to Hugging Face (see hf_sync.py). Uploads by "
+        "default -- the whole point of checkpointing is surviving the pod's 24h rental cap, which "
+        "only works if progress leaves the pod, see .agents/record.md Decision #21.",
+    )
     args = parser.parse_args()
     n_samples = args.n_samples if args.n_samples else None
 
@@ -241,6 +260,7 @@ def main() -> None:
         n_samples=n_samples,
         seed=args.seed,
         checkpoint_every=args.checkpoint_every,
+        upload_every_checkpoint=args.upload_every_checkpoint,
     )
     print(f"Generated {len(dataset)} Vietnamese preference pairs -> {args.preference_data_path}")
 

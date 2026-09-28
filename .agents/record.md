@@ -1108,6 +1108,56 @@
 
 ---
 
+### #29 — Pod #2 ("RTX 5090", thực chất laptop 24GB) KHÔNG giải quyết được vấn đề VRAM của 3090; fix `report_to="none"` cho wandb crash; bài học lock file mồ côi
+
+- **Context:** Sau Decision #26 (quyết định thuê GPU ≥32GB Ampere+ thay 3090), người dùng thuê 1 pod
+  ckey.vn khác (`n2.ckey.vn:2961`), tin là RTX 5090 32GB. `nvidia-smi` xác nhận ngay khi SSH vào:
+  `NVIDIA GeForce RTX 5090 Laptop GPU, 24463 MiB, compute_cap 12.0` — thực chất chỉ 24GB, đúng bằng
+  3090. Đã hỏi người dùng xác nhận đi tiếp thử nghiệm (thay vì trả pod ngay) để có dữ liệu thật thay
+  vì suy đoán, vì compute capability 12.0 (Blackwell) mới có thể có quản lý bộ nhớ khác biệt.
+- **Decision:**
+  1. Setup môi trường qua `tools/pod_setup/pod_init.sh` chạy sạch, không vấn đề (bước 1-4).
+  2. `vi_preference_gen.py --n_samples 200`: chạy thành công, nhưng throughput **1.825 samples/s**
+     — CHẬM HƠN 3090 (2.351 samples/s, Decision #23), dù GPU đời mới hơn. Nghi do kernel
+     CUDA/vLLM 0.11.0 chưa tối ưu cho sm_120 (kiến trúc Blackwell quá mới tại thời điểm build env
+     cache 2026-09-22).
+  3. `train_dpo.py --max_length 2048`: precompute reference log probs chạy xong KHÔNG OOM (200/200,
+     ~90s) — nhưng **OOM thật ở step 2/21 khi backward pass** (`Tried to allocate 748.00 MiB ...
+     23.42 GiB total ... 581.31 MiB is free`) — giống hệt pattern OOM đã gặp trên 3090
+     (`infra_handoff.md`, "mid-run OOM at step ~2"). Xác nhận: GPU 24GB "5090 laptop" này KHÔNG
+     giải quyết được lý do đổi từ 3090 — phải chấp nhận lại đúng 1 trong các đánh đổi cũ
+     (`max_length` giảm hoặc QLoRA) nếu dùng tiếp pod này.
+  4. **2 lỗi hạ tầng thật tìm được, không liên quan tới VRAM**, cả hai xảy ra khi debug quá trình
+     tưởng nhầm là "treo":
+     - **Lock file mồ côi**: sau khi `kill -9` 1 tiến trình đang tải model giữa chừng (hiểu nhầm là
+       treo trong khi thực ra chỉ đang tải chậm, ~11MB/s đo bằng `curl -v`),
+       `~/.cache/huggingface/hub/.locks/**/*.lock` không được giải phóng sạch (nghi overlay
+       filesystem của container) → lần `from_pretrained`/`snapshot_download` kế tiếp **treo thật
+       vô thời hạn** tới khi xoá tay lock file. Verify bằng cách: xoá lock → gọi lại → chạy ngay lập
+       tức, không còn treo.
+     - **wandb crash khi chạy nền không tty**: `DPOConfig` không set `report_to`, mặc định HF
+       Trainer bật wandb auto-init; `nohup ... &` không có tty để nhập API key → crash
+       `wandb.errors.errors.UsageError: api_key not configured (no-tty)` ngay khi `trainer.train()`
+       bắt đầu — xảy ra SAU KHI precompute ref log probs đã chạy xong (mất ~1.5 phút pod, xoá sạch
+       kết quả OOM-check thật đầu tiên, phải chạy lại lần 2 mới đo được OOM thật ở mục 3).
+  5. Đã fix mục 4b trong code: `dpo_config.py::build_dpo_config` thêm `report_to="none"` vào
+     `DPOConfig(...)` — không cần nhớ set `WANDB_DISABLED` tay ở mọi script chạy pod nữa.
+  6. Người dùng chọn: trả pod này, tìm GPU ≥32GB THẬT (không lặp lại nhầm lẫn tên listing "5090"
+     không đảm bảo VRAM 32GB — laptop SKU cùng dòng chỉ 24GB).
+- **Rejected alternatives:** Tiếp tục dùng pod này với `max_length=1536` hoặc QLoRA — loại vì đã
+  chứng minh được pod này còn CHẬM HƠN 3090 cho việc sinh data, nên dù chấp nhận cùng 1 đánh đổi
+  VRAM như 3090, vẫn không có lý do kinh tế/kỹ thuật nào để chọn nó thay vì quay lại 3090 hoặc thuê
+  GPU khác.
+- **Consequences:** `data/preference` (200 mẫu VN sinh trên pod này) đã upload HF, dùng được cho
+  bất kỳ pod nào sau — không mất công sinh lại. `infra_handoff.md` cập nhật tiêu chí: khi thuê pod
+  tiếp theo, PHẢI xác nhận VRAM bằng số GB cụ thể với host trước khi trả tiền (không suy ra từ tên
+  GPU "5090"/"4090"/...), và coi `nvidia-smi` cho VRAM <32GB là điều kiện dừng ngay, không thử tiếp
+  "biết đâu kiến trúc mới đỡ hơn" (đã thử đúng 1 lần, không đỡ). Gợi ý thêm cho `pod_init.sh` (chưa
+  làm, người dùng đang tự sửa file): dọn lock mồ côi (`find ~/.cache/huggingface -iname "*.lock"
+  -delete`) trước mỗi lần tải model tự động qua biến `MODELS` đang được thêm vào script.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

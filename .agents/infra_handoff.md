@@ -10,7 +10,45 @@ Người dùng đã xoá pod này sau khi hoàn tất go/no-go pipeline test. SS
 còn hiệu lực**, đừng dùng lại. Không mất dữ liệu gì — mọi thứ quan trọng đã đẩy lên git (code) và
 HF (data/checkpoint), xem mục "Trạng thái đã đạt được" bên dưới.
 
-## Pod tiếp theo — dự kiến thuê RTX 5090 32GB (chưa chốt máy cụ thể)
+## Pod #2 (n2.ckey.vn:2961, "RTX 5090") — THẤT BẠI MỤC TIÊU, đang chờ xoá (2026-09-28)
+
+Thuê để né vấn đề VRAM của 3090. Thực tế `nvidia-smi` cho thấy đây là **"RTX 5090 Laptop GPU",
+chỉ 24463 MiB (~24GB) VRAM** — không phải bản desktop 32GB như kỳ vọng khi quyết định thuê. Kết
+quả thật đo được trên pod này (xem `.agents/record.md` Decision #29 để có chi tiết đầy đủ):
+
+1. **Không giải quyết được vấn đề gốc**: `train_dpo.py --max_length 2048` OOM thật ở step 2/21
+   (`Tried to allocate 748MiB, 23.42GiB total, 581MiB free`) — **giống hệt** lỗi từng gặp trên
+   3090. Compute capability 12.0 (Blackwell) không giúp gì cho vấn đề VRAM.
+2. **Sinh data còn chậm hơn 3090**: `vi_preference_gen.py --n_samples 200` đạt 1.825 samples/s,
+   thấp hơn 3090's 2.351 samples/s — khả năng do kernel CUDA/vLLM 0.11.0 chưa tối ưu tốt cho
+   sm_120 (kiến trúc rất mới).
+3. **Mạng tải file lớn chậm** (~11MB/s đo bằng `curl` cho model shard từ HF CDN) — không phải bug,
+   nhưng khiến lần đầu tưởng nhầm là "treo" (xem bài học dưới).
+4. **Bug thật tìm được — lock file mồ côi**: sau khi `kill -9` một tiến trình đang tải model giữa
+   chừng, `~/.cache/huggingface/hub/.locks/**/*.lock` không được giải phóng sạch (nghi do overlay
+   filesystem của container) → lần gọi `from_pretrained`/`snapshot_download` sau đó **treo thật vô
+   thời hạn** cho tới khi xoá tay các file `.lock`. Rủi ro thật cho bất kỳ pod nào nếu 1 lần chạy
+   bị ngắt giữa chừng ở bước tải rồi chạy lại — `pod_init.sh` nên tự dọn lock trước mỗi lần tải
+   (`find ~/.cache/huggingface -iname "*.lock" -delete` trước mỗi `snapshot_download`).
+5. **Bug thật khác — wandb crash khi chạy nền**: `nohup ... &` không có tty, `report_to` mặc định
+   của `DPOConfig` kích hoạt wandb auto-init, wandb ném `UsageError: api_key not configured
+   (no-tty)`, crash training ngay sau khi precompute ref log probs đã chạy xong (lãng phí ~1.5 phút
+   pod + xoá sạch câu trả lời thật cho câu hỏi OOM). **Đã fix trong code**
+   (`dpo_config.py`: `report_to="none"`), không cần nhớ set `WANDB_DISABLED` tay nữa.
+
+**Dữ liệu vẫn giữ được**: `vn_preference_test200_5090.jsonl` (200 mẫu, sinh xong, đã upload HF
+`pod_outputs/vi_preference_gen/vn_preference_test200_5090.jsonl`) — dùng được cho bất kỳ pod nào
+sau này, không cần sinh lại.
+
+**Tiêu chí sửa cho lần thuê tiếp theo** (bổ sung, không thay thế mục dưới):
+- **Phải xác nhận rõ "desktop" không phải "laptop"** trong tên GPU của listing trước khi thuê —
+  bài học thật lần này: tên listing ghi "5090" không đảm bảo VRAM 32GB, laptop SKU cùng dòng chỉ
+  có 24GB. Hỏi host xác nhận VRAM cụ thể bằng số (GB) trước khi trả tiền, không suy ra từ tên GPU.
+- Vẫn kiểm tra `nvidia-smi` ngay khi SSH vào (đã làm đúng lần này) — nhưng lần sau nên coi đây là
+  điều kiện DỪNG NGAY nếu VRAM < 32GB, không thử "biết đâu kiến trúc mới đỡ hơn" nữa (đã thử, không
+  đỡ).
+
+## Pod tiếp theo — cần thuê RTX ≥32GB VRAM THẬT (đã thử 1 lần "5090" không đạt, xem trên)
 
 **Lý do đổi từ 3090 sang GPU ≥32GB VRAM** (xem `record.md` Decision #25, #26): 3090 (24GB) không
 đủ dư để chạy đúng `max_length=2048` (giá trị anchor trích dẫn theo config gốc Meta,

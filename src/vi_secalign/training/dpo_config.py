@@ -124,4 +124,12 @@ def build_dpo_config(
         # (paired with model.enable_input_require_grads() in train_dpo.py) -- the reentrant
         # (default) variant is the one known to interact badly with frozen-base + LoRA setups.
         gradient_checkpointing_kwargs={"use_reentrant": False},
+        # HF Trainer's default report_to="all" auto-inits wandb if the package is importable
+        # (it is -- pulled in transitively by the env cache). On a pod launched via `nohup ... &`
+        # (no tty), wandb's interactive api-key prompt has nothing to read from and raises
+        # UsageError, crashing the whole run right at train() -- confirmed real crash on the pod
+        # (2026-09-28) after reference-log-prob precompute had already finished successfully. This
+        # project doesn't use wandb tracking, so disable it outright rather than requiring every
+        # pod launch script to remember to export WANDB_DISABLED=true.
+        report_to="none",
     )

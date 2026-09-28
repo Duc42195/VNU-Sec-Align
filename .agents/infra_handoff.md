@@ -48,6 +48,42 @@ sau này, không cần sinh lại.
   điều kiện DỪNG NGAY nếu VRAM < 32GB, không thử "biết đâu kiến trúc mới đỡ hơn" nữa (đã thử, không
   đỡ).
 
+## Pod #3 (n2.ckey.vn:2500, RTX 5090 DESKTOP thật 32GB) — THÀNH CÔNG, đang dùng (2026-09-28)
+
+Xác nhận `nvidia-smi`: `NVIDIA GeForce RTX 5090, 32607 MiB, compute_cap 12.0` — đúng bản desktop,
+đúng tiêu chí đã đặt ra. Kết quả đầy đủ ở `.agents/record.md` Decision #30, tóm tắt:
+
+1. **`train_dpo.py --max_length 2048` chạy xong KHÔNG OOM** — vượt xa điểm OOM cũ (step 2/21) trên
+   cả 3090 lẫn "5090 laptop". `train_runtime=258.6s` (so với 744.87s trên 3090 ở `max_length` THẤP
+   HƠN 1536) — nhanh hơn nhiều dù khối lượng việc/step nặng hơn. loss 0.417→0.063,
+   rewards/accuracies 85.8%→98.6%.
+2. **`vi_preference_gen.py` throughput 4.534 samples/s** — gần gấp đôi 3090 (2.351) và 5090-laptop
+   (1.825). Đây là hiệu năng thật của Blackwell khi mọi lớp hạ tầng (libcuda, VRAM) đều đúng.
+3. **2 bug hạ tầng mới tìm được, đã fix**:
+   - **`-lcuda` linker error khi Triton JIT compile** (`torch._inductor.exc.InductorError:
+     ... -lcuda: No such file or directory`) — pod này chạy trên WSL (Windows Subsystem for Linux,
+     thấy qua path `/usr/lib/wsl/drivers/...`), chỉ có `libcuda.so.1` không có symlink `libcuda.so`
+     mà `-lcuda` cần ở link-time. Fix: `ln -sf /usr/lib/wsl/drivers/<driver>/libcuda.so.1
+     /usr/lib/x86_64-linux-gnu/libcuda.so && ldconfig`. Đã verify: chạy lại `vi_preference_gen.py`
+     ngay sau khi tạo symlink, pass ngay lần đầu.
+   - **HF upload checkpoint thất bại nếu `--base_model` là local path**: auto-gen README.md của
+     PEFT/Trainer đặt `base_model: <path local>` vào YAML frontmatter, HF Hub từ chối vì không phải
+     model id hợp lệ (`"base_model" with value "..." is not valid`). Fix tạm: sửa tay dòng
+     `base_model:` trong README.md thành HF id đúng (`meta-llama/Llama-3.1-8B-Instruct`) trước khi
+     upload lại. **Chưa fix trong code** — nếu dùng local model path để tránh tải lại (khuyến nghị,
+     xem dưới), nhớ việc này hoặc luôn truyền `--base_model` bằng HF id (vLLM/transformers tự dùng
+     cache local nếu đã có, không tải lại mạng, nên dùng HF id vẫn nhanh).
+4. **`snapshot_download` thiếu `ignore_patterns=["original/*"]`** (đã fix trong `pod_init.sh`, xem
+   Decision #29) khiến lần tải `llama_3_1_8b_instruct` đầu tiên trên pod này mất **40 phút thay vì
+   ~20** (tải dư ~16GB thư mục `original/`). Fix đã có sẵn cho lần tải model tiếp theo.
+
+**Checkpoint + data đã upload HF**: `pod_outputs/train_dpo/dpo_vn200_5090desktop/` (checkpoint LoRA
+thật, max_length=2048, không sai lệch phương pháp luận nào) và
+`pod_outputs/vi_preference_gen/vn_preference_test200_5090desktop.jsonl`.
+
+**Kết luận**: pod này đủ điều kiện dùng cho N thật (T9). Không cần thuê thêm pod nào khác trừ khi
+disk/thời gian không đủ giữa chừng.
+
 ## Pod tiếp theo — cần thuê RTX ≥32GB VRAM THẬT (đã thử 1 lần "5090" không đạt, xem trên)
 
 **Lý do đổi từ 3090 sang GPU ≥32GB VRAM** (xem `record.md` Decision #25, #26): 3090 (24GB) không

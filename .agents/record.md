@@ -1158,6 +1158,60 @@
 
 ---
 
+### #30 — Pod #3 (RTX 5090 DESKTOP thật, 32GB) THÀNH CÔNG: `train_dpo.py --max_length 2048` không OOM; 2 bug hạ tầng mới (libcuda WSL, HF upload metadata)
+
+- **Context:** Người dùng thuê pod thứ 3 (`n2.ckey.vn:2500`), lần này `nvidia-smi` xác nhận đúng
+  `NVIDIA GeForce RTX 5090, 32607 MiB, compute_cap 12.0` — bản desktop thật, đúng tiêu chí Decision
+  #29 đặt ra (không lặp lại nhầm lẫn laptop-vs-desktop). Người dùng cũng tự sửa `pod_init.sh` thêm
+  cơ chế tự tải model qua biến `MODELS` (dùng `registry.py` làm nguồn sự thật, có sẵn cảnh báo
+  "chậm không phải treo" và dọn lock mồ côi trước mỗi lần tải — cả hai đúng theo góp ý ở Decision
+  #29).
+- **Decision:**
+  1. `pod_init.sh` chạy trọn vẹn, in `SETUP_DONE`, nhưng bước tải model mất **40 phút** (không phải
+     20) vì `snapshot_download()` thiếu `ignore_patterns` nên tải luôn thư mục `original/`
+     (`consolidated.00.pth` dạng torchtune/native, ~16GB, trùng lặp hoàn toàn với `.safetensors`
+     mà transformers/vllm thực sự dùng). Đã sửa `pod_init.sh` thêm
+     `ignore_patterns=["original/*"]` — áp dụng từ lần tải model tiếp theo trở đi, không áp dụng
+     ngược cho lần này (đã tải dở, không đáng huỷ giữa chừng).
+  2. `vi_preference_gen.py --n_samples 200` lần đầu **crash ngay khi khởi tạo vLLM engine**:
+     `torch._inductor.exc.InductorError: ... /usr/bin/ld: cannot find -lcuda`. Root cause xác định
+     bằng cách đọc traceback đầy đủ: pod này chạy trên **WSL** (Windows Subsystem for Linux — thấy
+     qua đường dẫn `/usr/lib/wsl/drivers/nvhdc.inf_.../` trong cả `ldconfig` warning từ đầu log lẫn
+     trong chính lệnh `gcc` bị lỗi), driver WSL chỉ cung cấp `libcuda.so.1`, không có symlink
+     `libcuda.so` mà linker cần cho `-lcuda` ở link-time (Triton JIT compile kernel CUDA cần bước
+     này). Fix: `ln -sf /usr/lib/wsl/drivers/<driver>/libcuda.so.1
+     /usr/lib/x86_64-linux-gnu/libcuda.so && ldconfig`. Verify: chạy lại ngay, pass hoàn toàn, không
+     còn lỗi này nữa trong suốt phần còn lại của phiên.
+  3. `vi_preference_gen.py --n_samples 200` (sau fix libcuda): **4.534 samples/s** — nhanh hơn hẳn cả
+     3090 (2.351) và "5090 laptop" (1.825, Decision #29). Đây là hiệu năng thật của kiến trúc
+     Blackwell khi không bị chặn bởi lỗi hạ tầng.
+  4. `train_dpo.py --max_length 2048`: **chạy xong hoàn toàn, KHÔNG OOM** — vượt xa điểm OOM cũ
+     (step 2/21, gặp cả trên 3090 lẫn 5090-laptop). Kết quả: loss 0.4169→0.0628,
+     `rewards/accuracies` 85.8%→98.6%, `train_runtime=258.6s` — nhanh hơn nhiều so với 3090's
+     744.87s dù max_length ở đây CAO HƠN (2048 vs 1536, tức khối lượng tính toán/step nặng hơn).
+     VRAM đạt đỉnh ~32.1/32.6GB (rất sát, nhưng ổn định suốt 21 step, không OOM). **Đây là câu trả
+     lời dứt điểm cho toàn bộ chuỗi quyết định đổi GPU (Decision #25→26→29→30): GPU ≥32GB VRAM
+     THẬT là điều kiện đủ, không cần đánh đổi `max_length` hay QLoRA cho N thật của T9.**
+  5. **Bug mới, chưa fix trong code**: dùng local model path (`/root/models/llama_3_1_8b_instruct`,
+     để tránh tải lại qua mạng) làm `--base_model` khiến HF upload checkpoint thất bại — auto-gen
+     README.md của PEFT/Trainer đặt path local vào YAML frontmatter `base_model:`, HF Hub từ chối
+     (`"base_model" with value "..." is not valid`). Fix tạm thời: sửa tay dòng `base_model:` trong
+     README.md thành HF id đúng trước khi upload lại (đã làm, checkpoint 2.28GB upload thành công
+     sau khi sửa). Chưa sửa triệt để trong `train_dpo.py`/`hf_sync.py` — cần nhớ việc này ở lần
+     train N thật, hoặc luôn truyền `--base_model` bằng HF id thay vì local path (transformers/vllm
+     tự dùng cache local nếu file đã tải sẵn, không tải lại qua mạng, nên không mất tốc độ).
+- **Rejected alternatives:** Không có — đây là kết quả thành công, không phải quyết định có phương
+  án bị loại. Riêng việc SỬA `ignore_patterns` ngay giữa lúc đang tải dở lần đầu bị loại (không đáng
+  huỷ ~15 phút đã tải để tiết kiệm chưa tới 20 phút, xem mục Decision #2 ở trên).
+- **Consequences:** Checkpoint (`pod_outputs/train_dpo/dpo_vn200_5090desktop/`) và data
+  (`pod_outputs/vi_preference_gen/vn_preference_test200_5090desktop.jsonl`) đã upload HF đầy đủ.
+  Pod này đủ điều kiện dùng cho N thật T9 — không cần thuê thêm pod nào khác trừ khi hết thời
+  gian/disk giữa chừng. Bước tiếp theo: chốt N cuối cùng cho EN:VN (Decision #21 vẫn treo) dựa trên
+  throughput thật 4.534 samples/s vừa đo, rồi chạy `vi_preference_gen.py`/`en_preference_gen.py` với
+  N thật.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

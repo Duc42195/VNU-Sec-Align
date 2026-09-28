@@ -51,32 +51,59 @@ export HF_TOKEN=hf_xxx   # BẮT BUỘC trước khi chạy — token quyền re
 curl -sL https://raw.githubusercontent.com/Duc42195/VNU-Sec-Align/main/tools/pod_setup/pod_init.sh | bash
 ```
 
-**`HF_TOKEN` phải export TRƯỚC** — repo cache trên HF là private, script tải cache đó ngay từ bước
-[3/5], không phải ở bước cuối. Thiếu token sẽ báo lỗi `401 RepositoryNotFoundError` và dừng ngay.
+**`HF_TOKEN` phải export TRƯỚC** — repo cache trên HF là private (cần cho bước [3/5]), và model ở
+bước [5/5] cũng cần token (gated). Script tự kiểm tra biến này NGAY ĐẦU bước [1/5] và dừng với thông
+báo rõ ràng nếu thiếu — không cần đợi tới lỗi `401 RepositoryNotFoundError` giữa chừng nữa (lỗi đó
+giờ chỉ còn xảy ra nếu token SAI/hết hạn, không phải thiếu hẳn).
 
 Script làm 5 bước tự động:
-1. Cài `git`/`uv` nếu thiếu.
+1. **Kiểm tra `HF_TOKEN` NGAY ĐẦU script** (trước cả clone/venv — fail sớm nếu thiếu, không lãng
+   phí thời gian pod cho phần việc sẽ hỏng ở bước 3 hoặc 5 dù sao), rồi cài `git`/`uv` nếu thiếu.
 2. Clone/pull code từ GitHub (nhánh `main`).
 3. Tạo venv Python 3.13, login HF, tải + giải nén cache 5.1GB, copy vào site-packages, cài lại
    numpy/cupy/ray/vllm tươi (glibc-sensitive, xem Troubleshooting), kiểm tra import.
 4. Copy 14 file data nhỏ + tự sinh `CySE_prompt_injections.json`.
-5. In sẵn (không tự chạy) 4 lệnh `snapshot_download` mẫu để tải model khi cần.
+5. **Tự tải model** theo biến môi trường `MODELS` (xem mục 3 dưới đây) — không còn chỉ in lệnh mẫu.
 
 Kết thúc bằng dòng `SETUP_DONE`.
 
-### 3. Tải model (làm tay, chọn cái cần)
+### 3. Tải model (tự động ở bước [5/5], theo biến `MODELS`)
+
+Mặc định (`MODELS` không set) chỉ tải đúng 1 model: `llama_3_1_8b_instruct`
+(`meta-llama/Llama-3.1-8B-Instruct`) — model duy nhất thật sự chặn bước kế tiếp
+(`vi_preference_gen.py`/`train_dpo.py` smoke-test, xem `.agents/infra_handoff.md`). Key tra theo
+`src/vi_secalign/models/registry.py::REGISTRY` (nguồn sự thật duy nhất cho HF id — sửa version model
+chỉ cần sửa ở đó, không phải sửa `pod_init.sh`).
+
+Override bằng cách export `MODELS` (danh sách key, phân cách dấu phẩy) **trước** khi chạy
+`pod_init.sh`:
 
 ```bash
-python3 -c "from huggingface_hub import snapshot_download; snapshot_download('meta-llama/Llama-3.1-8B-Instruct', local_dir='~/models/llama_3_1_8b_instruct')"
-python3 -c "from huggingface_hub import snapshot_download; snapshot_download('facebook/Meta-SecAlign-8B', local_dir='~/models/meta_secalign_8b')"
-python3 -c "from huggingface_hub import snapshot_download; snapshot_download('meta-llama/Meta-Llama-3-8B-Instruct', local_dir='~/models/llama3_8b_instruct')"
+export HF_TOKEN=hf_xxx
+export MODELS="llama_3_1_8b_instruct,meta_secalign_8b"   # thêm baseline nếu cần luôn
+curl -sL https://raw.githubusercontent.com/Duc42195/VNU-Sec-Align/main/tools/pod_setup/pod_init.sh | bash
 ```
 
-Model thứ 3 (`Meta-Llama-3-8B-Instruct`) là model "trọng tài" nhỏ dùng riêng cho bước 4 dưới đây
-(sinh câu trả lời tham chiếu SEP) — không phải model đang được đánh giá.
+`MODELS=""` bỏ qua tải hẳn (script in lại lệnh `snapshot_download` mẫu để tự chạy tay sau). Key nào
+trỏ tới local path trong registry (adapter project tự train, vd `phase2_final_adapter` — chưa tồn
+tại cho tới khi train xong) sẽ tự bị bỏ qua với dòng `[skip]`, không lỗi.
+
+Ví dụ key hay dùng (xem đầy đủ + role ở `registry.py`):
+- `llama_3_1_8b_instruct` — base cho fine-tuning + undefended baseline (mặc định).
+- `meta_secalign_8b` — baseline đã defense, dùng cho T1-T3/so sánh T10.
+- `llama3_8b_instruct_sep_reference` — "trọng tài" nhỏ, chỉ cần nếu chạy lại
+  `sep_reference_gen.py` (SEP đã sinh xong 1 lần, output đã ở HF — thường không cần tải lại).
 
 **Lưu ý disk**: kiểm tra dung lượng pod thật bằng `df -h /` — đừng giả định theo con số ghi trong
 `pod_init.sh` cũ (từng sai một lần, xem Troubleshooting). Model 8B ở fp16 ~16GB/bản; 4-bit ~5-6GB.
+Script tự in `df -h /` trước/sau khi tải để so sánh.
+
+**Lưu ý thời gian**: model 8B có thể mất 20-30 phút tuỳ mạng thật của pod — chậm không có nghĩa là
+treo, **đừng Ctrl+C giữa chừng** (`huggingface_hub` có resume, ngắt giữa chừng chỉ mất tiến độ đã
+tải, không phải lỗi thật). `hf-xet==1.2.0` đã pin sẵn trong `requirements.txt` nên nằm trong cache
+thư viện (bước 3), `huggingface_hub` tự dùng nó tăng tốc cho repo hỗ trợ Xet — không cần set thêm
+biến môi trường nào cho việc này (không phải `HF_HUB_ENABLE_HF_TRANSFER`, đó là biến của gói khác,
+`hf_transfer`, KHÔNG có trong requirements.txt — set nhầm biến đó sẽ làm `huggingface_hub` lỗi ngay).
 
 ### 4. Sinh dữ liệu tham chiếu SEP (cần GPU, chạy 1 lần/pod)
 

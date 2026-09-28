@@ -30,7 +30,31 @@ REPO_URL="https://github.com/Duc42195/VNU-Sec-Align.git"
 REPO_BRANCH="main"   # KHÔNG phải "clean-main" -- đó chỉ là tên nhánh cục bộ trên laptop
 # ===========================================================
 
-echo "=== [1/5] Kiểm tra công cụ cơ bản (pod có thể là Ubuntu trần, không có gì cả) ==="
+# 2026-09-28: model(s) tự tải ở bước [5/5] -- danh sách key của registry.py, phân cách bằng dấu
+# phẩy (KHÔNG phải HF id thô, để registry.py (src/vi_secalign/models/registry.py) luôn là nguồn
+# sự thật duy nhất cho HF id -- sửa version/tên model chỉ cần sửa 1 chỗ, không phải sửa cả script
+# này). Mặc định chỉ tải đúng 1 model thật sự cần ngay (base cho vi_preference_gen.py/train_dpo.py,
+# xem .agents/infra_handoff.md "Việc còn lại" bước 2) -- KHÔNG mặc định tải thêm meta_secalign_8b
+# (cần cho baseline T1-T3/so sánh T10 nhưng không chặn smoke-test) vì disk pod mới chưa biết chắc
+# (pod cũ chỉ có ~50GB trống, 2 model 8B fp16 ~32GB đã sát mép -- xem manual.md Troubleshooting).
+# Override khi cần, ví dụ:
+#   MODELS="llama_3_1_8b_instruct,meta_secalign_8b" bash pod_init.sh
+#   MODELS="" bash pod_init.sh   # bỏ qua tải model, tự tải tay sau (xem lệnh in ra cuối script)
+MODELS="${MODELS:-llama_3_1_8b_instruct}"
+export MODELS   # bước [5/5] đọc lại qua os.environ trong subprocess python3, phải export
+# ===========================================================
+
+echo "=== [1/5] Biến môi trường + công cụ cơ bản (pod có thể là Ubuntu trần, không có gì cả) ==="
+# 2026-09-28: kiểm tra HF_TOKEN NGAY ĐẦU script, trước cả git clone/tạo venv -- cả cache riêng tư
+# ở bước [3/5] lẫn model ở bước [5/5] đều cần nó. Thứ tự cũ (kiểm tra ở giữa bước 3, SAU khi đã
+# clone+tạo venv) lỡ lãng phí đúng phần việc đó nếu thiếu token -- fail sớm ở đây tiết kiệm thời
+# gian pod thật (pod tính tiền theo giờ, xem .agents/CLAUDE.md/feedback_pod_priority).
+if [ -z "${HF_TOKEN:-}" ]; then
+  echo "LỖI: chưa có HF_TOKEN trong biến môi trường -- cache thư viện (private) và model gated đều cần nó."
+  echo "Chạy: export HF_TOKEN=hf_xxx   (token có quyền read, đã accept license Llama-3/Llama-3.1)"
+  echo "Rồi chạy lại toàn bộ script."
+  exit 1
+fi
 command -v git >/dev/null || (apt-get update -qq && apt-get install -y -qq git)
 command -v python3 >/dev/null || (apt-get update -qq && apt-get install -y -qq python3 python3-pip python3-venv)
 command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -54,16 +78,8 @@ uv venv ~/venv --python 3.13
 source ~/venv/bin/activate
 uv pip install huggingface_hub   # nhỏ, tải thẳng từ PyPI cũng nhanh -- chỉ cần để tải tarball cache
 
-# 2026-09-22: BẮT BUỘC có HF_TOKEN từ đây, không phải chỉ ở bước [5/5] cũ như trước -- repo cache
-# ($HF_REPO_ID) là PRIVATE (build_env_cache.sh: HF_PRIVATE=true), nên tải nó cũng cần đăng nhập,
-# không chỉ tải model gated sau này. Thứ tự cũ (login ở bước 5, sau khi đã tải cache ở bước 3) sai
-# -- lỗi thật gặp phải (2026-09-22): 401 RepositoryNotFoundError khi tải cache vì chưa có token.
-if [ -z "${HF_TOKEN:-}" ]; then
-  echo "LỖI: chưa có HF_TOKEN trong biến môi trường -- repo cache là private, không tải được."
-  echo "Chạy: export HF_TOKEN=hf_xxx   (token có quyền read, đã accept license Llama-3/Llama-3.1)"
-  echo "Rồi chạy lại toàn bộ script (git pull/venv tạo lại rất nhanh, không lãng phí gì đáng kể)."
-  exit 1
-fi
+# repo cache ($HF_REPO_ID) là PRIVATE (build_env_cache.sh: HF_PRIVATE=true) -- HF_TOKEN đã kiểm tra
+# tồn tại ở bước [1/5] (fail sớm trước khi tốn thời gian clone/venv nếu thiếu), dùng lại ở đây.
 python3 -c "from huggingface_hub import login; login(token='$HF_TOKEN')"
 
 CACHE_DIR=~/env_cache
@@ -119,21 +135,52 @@ cp -r "$CACHE_DIR/meta_secalign_data/." ~/repo/external/meta_secalign/data/
 # model/data thô -- xem docstring tools/pod_setup/fetch_meta_secalign_data_urls.py).
 python3 ~/repo/tools/pod_setup/fetch_meta_secalign_data_urls.py
 
-echo "=== [5/5] (Tuỳ chọn) Tải sẵn model — chạy tay dòng nào cần ==="
-# Đã login HF ở bước [3/5] (cần sớm hơn để tải chính cache riêng tư) -- không cần login lại ở đây.
-# Lưu ý disk thật (2026-09-22, xem .agents/infra_handoff.md): pod ckey.vn đang thuê chỉ có
-# ~73GB tổng / ~50GB trống, KHÔNG phải 100GB. Đủ cho model 8B (kể cả giữ 2 bản 4-bit cùng lúc)
-# nhưng KHÔNG đủ cho 70B (~140GB fp16, ~35-40GB dù 4-bit) -- 70B để dành pod khác lớn hơn, GĐ6.
-cat << 'EOF'
-# Chạy tay khi cần (không tự động, vì không phải lúc nào cũng cần cả 4 ngay). Dùng Python API,
-# không phải `huggingface-cli download` -- lệnh CLI không có sẵn qua đường cài này:
-#   python3 -c "from huggingface_hub import snapshot_download; snapshot_download('meta-llama/Llama-3.1-8B-Instruct', local_dir='~/models/llama_3_1_8b_instruct')"
-#   python3 -c "from huggingface_hub import snapshot_download; snapshot_download('facebook/Meta-SecAlign-8B', local_dir='~/models/meta_secalign_8b')"
-#   python3 -c "from huggingface_hub import snapshot_download; snapshot_download('SeaLLMs/SeaLLMs-v3-7B-Chat', local_dir='~/models/seallm_v3_7b_chat')"
-#   python3 -c "from huggingface_hub import snapshot_download; snapshot_download('Jason-42195/VNU-SecAlign', local_dir='~/models/jason_v1')"
-#   # "Trọng tài" cho sep_reference_gen.py (T1-T3), KHÔNG phải model đang đánh giá -- xem
-#   # docstring sep_reference_gen.py. Chỉ cần tải nếu chạy script đó:
-#   python3 -c "from huggingface_hub import snapshot_download; snapshot_download('meta-llama/Meta-Llama-3-8B-Instruct', local_dir='~/models/llama3_8b_instruct')"
-EOF
+echo "=== [5/5] Tải model theo \$MODELS (mặc định: $MODELS) ==="
+# Đã login HF ở bước [3/5] -- không cần login lại ở đây.
+# Lưu ý disk thật (xem .agents/infra_handoff.md): pod cũ chỉ có ~50GB trống, KHÔNG phải 100GB --
+# mỗi model 8B fp16 ~16GB/bản. Luôn kiểm tra df -h trước khi thêm model vào $MODELS. KHÔNG bao giờ
+# thêm 70B (~140GB fp16) vào đây -- để dành pod khác lớn hơn, GĐ6.
+#
+# 2026-09-28: đổi từ chỉ IN lệnh (yêu cầu chạy tay) sang TỰ tải theo $MODELS -- key tra cứu qua
+# chính src/vi_secalign/models/registry.py (import trực tiếp, không hardcode HF id lặp lại ở đây)
+# để registry.py luôn là nguồn sự thật duy nhất. local_dir quy ước "~/models/<key>", khớp đúng
+# đường dẫn manual.md/record.md đã dùng để tham chiếu model đã tải trên pod.
+if [ -z "$MODELS" ]; then
+  echo "MODELS rỗng -- bỏ qua tải model. Tải tay sau, ví dụ:"
+  echo "  python3 -c \"from huggingface_hub import snapshot_download; snapshot_download('facebook/Meta-SecAlign-8B', local_dir='$HOME/models/meta_secalign_8b')\""
+else
+  echo "Đang tải model ($MODELS) -- có thể mất 20-30 phút/model tuỳ tốc độ mạng thật của pod."
+  echo "CHẬM KHÔNG CÓ NGHĨA LÀ TREO -- KHÔNG Ctrl+C giữa chừng (đã có checkpoint/resume của"
+  echo "huggingface_hub, Ctrl+C giữa chừng chỉ làm mất tiến độ đã tải, không phải lỗi thật)."
+  # hf-xet==1.2.0 đã pin trong requirements.txt (nằm sẵn trong cache bước [3/5]) -- huggingface_hub
+  # tự dùng nó để tăng tốc cho repo hỗ trợ Xet, KHÔNG cần biến môi trường gì thêm. KHÔNG set
+  # HF_HUB_ENABLE_HF_TRANSFER=1 ở đây -- đó là biến của gói `hf_transfer` (khác hf-xet), gói đó
+  # KHÔNG có trong requirements.txt; set biến này mà thiếu gói sẽ làm huggingface_hub raise
+  # ValueError ngay lập tức, không phải chỉ bỏ qua.
+  df -h / | tail -1   # trước khi tải -- so sánh với sau để biết model chiếm bao nhiêu
+  PYTHONPATH="$HOME/repo/src" python3 -c "
+import os
+from huggingface_hub import snapshot_download
+from vi_secalign.models.registry import REGISTRY
+
+keys = [k.strip() for k in os.environ['MODELS'].split(',') if k.strip()]
+home = os.path.expanduser('~')
+for key in keys:
+    spec = REGISTRY.get(key)
+    if spec is None:
+        raise SystemExit(f'MODELS: khong tim thay key {key!r} trong registry.py. Cac key hop le: {sorted(REGISTRY)}')
+    if '/' not in spec.source or spec.source.startswith(home):
+        # local path (adapter chua train xong, vd phase2_final_adapter) -- khong phai HF id, bo qua
+        print(f'[skip] {key}: source={spec.source!r} khong phai HF hub id, khong tai tu dong')
+        continue
+    # dọn lock mồ côi trước mỗi lần tải -- an toàn (không có tiến trình khác giữ lock thật ở đây)
+    os.system('find ~/.cache/huggingface -iname \"*.lock\" -delete 2>/dev/null')
+    local_dir = os.path.join(home, 'models', key)
+    print(f'[downloading] {key} <- {spec.source} -> {local_dir}')
+    snapshot_download(spec.source, local_dir=local_dir)
+    print(f'[done] {key}')
+"
+  df -h / | tail -1   # sau khi tải
+fi
 
 echo "SETUP_DONE — kiểm tra 'python3 -c \"import torch; print(torch.cuda.is_available())\"' trước khi chạy T1-T3."

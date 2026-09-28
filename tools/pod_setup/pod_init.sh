@@ -177,7 +177,13 @@ for key in keys:
     os.system('find ~/.cache/huggingface -iname \"*.lock\" -delete 2>/dev/null')
     local_dir = os.path.join(home, 'models', key)
     print(f'[downloading] {key} <- {spec.source} -> {local_dir}')
-    snapshot_download(spec.source, local_dir=local_dir)
+    # 2026-09-28: xác nhận thật trên pod (n2.ckey.vn:2500) -- thiếu ignore_patterns khiến
+    # snapshot_download tải luôn thư mục original/ (vd. Llama-3.1-8B-Instruct co
+    # original/consolidated.00.pth ~16GB, ban torchtune/native format trung lap hoan toan voi cac
+    # .safetensors) -- transformers/vllm chi doc .safetensors, khong bao gio dung original/*, nen
+    # day la lang phi thuan tuy: gan gap doi thoi gian tai (~40 phut thay vi ~20) va gan gap doi
+    # dung luong dia cho MOI model. loai bo bang ignore_patterns.
+    snapshot_download(spec.source, local_dir=local_dir, ignore_patterns=["original/*"])
     print(f'[done] {key}')
 "
   df -h / | tail -1   # sau khi tải

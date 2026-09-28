@@ -95,8 +95,13 @@ Ví dụ key hay dùng (xem đầy đủ + role ở `registry.py`):
   `sep_reference_gen.py` (SEP đã sinh xong 1 lần, output đã ở HF — thường không cần tải lại).
 
 **Lưu ý disk**: kiểm tra dung lượng pod thật bằng `df -h /` — đừng giả định theo con số ghi trong
-`pod_init.sh` cũ (từng sai một lần, xem Troubleshooting). Model 8B ở fp16 ~16GB/bản; 4-bit ~5-6GB.
-Script tự in `df -h /` trước/sau khi tải để so sánh.
+`pod_init.sh` cũ (từng sai một lần, xem Troubleshooting). Model 8B ở fp16 ~16GB/bản (chỉ tính
+`.safetensors`); 4-bit ~5-6GB. `snapshot_download()` dùng `ignore_patterns=["original/*"]` để loại
+bỏ thư mục `original/` (bản checkpoint dạng torchtune/native, vd `consolidated.00.pth` ~16GB cho
+Llama-3.1-8B-Instruct) — trùng lặp hoàn toàn với `.safetensors`, transformers/vllm không bao giờ
+đọc tới. Xác nhận thật trên pod (2026-09-28, n2.ckey.vn:2500): thiếu dòng này khiến 1 lần tải model
+8B mất ~40 phút thay vì ~20 và chiếm ~32GB thay vì ~16GB trên đĩa. Script tự in `df -h /` trước/sau
+khi tải để so sánh.
 
 **Lưu ý thời gian**: model 8B có thể mất 20-30 phút tuỳ mạng thật của pod — chậm không có nghĩa là
 treo, **đừng Ctrl+C giữa chừng** (`huggingface_hub` có resume, ngắt giữa chừng chỉ mất tiến độ đã

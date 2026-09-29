@@ -69,9 +69,17 @@ def _load_vi_corpus(hf_id: str, subset: str | None):
     """
     from datasets import load_dataset  # deferred: heavy dependency, not needed just to import this module
 
+    # trust_remote_code=True: Bactrian-X ships a loading script, so `datasets` prompts
+    # interactively for consent by default. Without this flag, a non-tty process (nohup, or a
+    # plain SSH exec_command with a never-written stdin pipe) either hangs forever waiting for
+    # input or raises ValueError on EOF -- confirmed real on-pod (2026-09-29): the exact same
+    # call succeeded once by chance (closed stdin happened to resolve to an implicit yes) then
+    # failed/hung on a second, otherwise-identical invocation. Corpus provenance/license already
+    # vetted (see module docstring) -- this is a consent-prompt-suppression fix, not a new trust
+    # decision.
     if subset:
-        return load_dataset(hf_id, subset)["train"]
-    return load_dataset(hf_id)["train"]
+        return load_dataset(hf_id, subset, trust_remote_code=True)["train"]
+    return load_dataset(hf_id, trust_remote_code=True)["train"]
 
 
 def generate_vi_preference_dataset(

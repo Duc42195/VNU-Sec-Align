@@ -110,6 +110,52 @@ thư viện (bước 3), `huggingface_hub` tự dùng nó tăng tốc cho repo h
 biến môi trường nào cho việc này (không phải `HF_HUB_ENABLE_HF_TRANSFER`, đó là biến của gói khác,
 `hf_transfer`, KHÔNG có trong requirements.txt — set nhầm biến đó sẽ làm `huggingface_hub` lỗi ngay).
 
+### 3b. Sinh preference data thật cho T9 (VN + EN, cần GPU)
+
+`vi_preference_gen.py`/`en_preference_gen.py` đều nhận `--n_samples` (cap thật trước khi vào vLLM)
+và `--max_model_len` (mặc định 12288, đã verify không OOM trên GPU ≥24GB) — `en_preference_gen.py`
+được viết lại 2026-09-29 để có cùng 2 tham số này (bản gốc gọi thẳng hàm của Meta, không cap được,
+thiếu `max_model_len`, xem record.md Decision #29/#31 và bên dưới).
+
+**Trần dữ liệu hợp lệ thật của mỗi corpus** (đo trực tiếp, không phải ước lượng) — đừng chọn N vượt
+quá các số này (VN/EN dùng chung 1 N theo Decision #21, nên trần thật là số NHỎ HƠN trong 2 số):
+- VN (`MBZUAI/Bactrian-X`, subset `vi`): 67.017 dòng, chỉ **24.599 dòng có `input` khác rỗng** (63%
+  rỗng/None).
+- EN (`yahma/alpaca-cleaned`): 51.760 dòng, chỉ **19.157 dòng có `input` khác rỗng** (37% hợp lệ) —
+  đây cũng chính là quy mô EN Meta THẬT SỰ đã train (hàm gốc của Meta không cap, dùng hết pool hợp
+  lệ) — trước đây từng ghi nhầm "Meta dùng ~52K" (Decision #20), đó là kích thước corpus thô, không
+  phải số mẫu train thật.
+
+```bash
+cd ~/repo && source ~/venv/bin/activate
+export PYTHONPATH=/root/repo/src HF_TOKEN=hf_xxx
+mkdir -p data/preference
+
+python3 -m vi_secalign.data_gen.vi_preference_gen \
+  --preference_data_path data/preference/vn_preference_nXXXX.jsonl \
+  --model_name_or_path /root/models/llama_3_1_8b_instruct \
+  --n_samples <N> --checkpoint_every 1000
+
+python3 -m vi_secalign.data_gen.en_preference_gen \
+  --preference_data_path data/preference/en_preference_nXXXX.jsonl \
+  --model_name_or_path /root/models/llama_3_1_8b_instruct \
+  --n_samples <N> --checkpoint_every 1000
+```
+
+Throughput thật đo được trên RTX 5090 desktop 32GB (2026-09-28/29, sau khi fix `-lcuda`, xem
+Troubleshooting): **VN 4.534 samples/s, EN 6.684 samples/s** (EN nhanh hơn vì prompt ngắn hơn nhiều
+— 99.9th percentile 367 token vs VN 1387 token). Dùng 2 số này để ước lượng thời gian cho N bất kỳ:
+`N/4.534` giây cho VN, `N/6.684` giây cho EN. Cả 2 script tự upload từng checkpoint lên HF
+(`pod_outputs/vi_preference_gen/`, `pod_outputs/en_preference_gen/`) — an toàn nếu pod dừng giữa
+chừng.
+
+Ước lượng thời gian TRAIN sau đó (không chỉ gen): `train_dpo.py` đo được **12.31 giây/step** ở
+`max_length=2048`, batch hiệu dụng 32 (per_device=1 × grad_accum=32), trên cùng GPU. Số step =
+`ceil(3 epoch × (N_EN+N_VN) / 32)`. Ví dụ N=19.000/bên (tổng 38.000): ~3.563 step × 12.31s ≈ 12.2h
+— CỘNG THÊM overhead upload checkpoint lên HF sau mỗi `save_steps=200` (~18 lần, mỗi lần ~2.28GB,
+đo được ~8.88MB/s ≈ 4.3 phút/lần ≈ thêm ~1.3h). Luôn cộng buffer ~15-20% cho phần train khi ước
+lượng ngân sách pod.
+
 ### 4. Sinh dữ liệu tham chiếu SEP (cần GPU, chạy 1 lần/pod)
 
 ```bash
@@ -189,6 +235,28 @@ nghĩa là quên `source ~/venv/bin/activate`, dễ nhầm với lỗi glibc vì
 nhau (cả hai đều là "import numpy thất bại"), nhưng nguyên nhân khác nhau — luôn kiểm tra
 `which python3`/`python3 --version` (phải ra `~/venv/bin/python3`, `Python 3.13.x`) trước khi kết
 luận là lỗi glibc.
+
+**`torch._inductor.exc.InductorError: ... /usr/bin/ld: cannot find -lcuda`** khi vLLM/Triton JIT
+compile kernel — gặp trên pod chạy trên **WSL** (Windows Subsystem for Linux, nhận diện qua đường
+dẫn `/usr/lib/wsl/drivers/...` xuất hiện ngay từ `ldconfig` warning lúc `pod_init.sh` chạy). Driver
+WSL chỉ cung cấp `libcuda.so.1`, không có symlink không-version `libcuda.so` mà linker cần cho
+`-lcuda` ở link-time. Fix:
+```bash
+ln -sf $(find /usr/lib/wsl -iname "libcuda.so.1" | head -1) /usr/lib/x86_64-linux-gnu/libcuda.so
+ldconfig
+```
+Verify bằng cách chạy lại đúng lệnh vừa lỗi — pass ngay, không cần sửa gì khác. Không xảy ra trên
+pod không chạy WSL (vd. pod bare-metal/KVM thường có sẵn `libcuda.so` đúng chuẩn).
+
+**Checkpoint train không upload được lên HF: `"base_model" with value "<path local>" is not
+valid`** — nếu `--base_model`/`--model_name_or_path` truyền vào là PATH LOCAL (vd.
+`/root/models/llama_3_1_8b_instruct`, dùng để tránh tải lại qua mạng), auto-gen README.md của
+PEFT/Trainer đặt path đó vào YAML frontmatter `base_model:`, HF Hub từ chối vì không phải model id
+hợp lệ. Checkpoint vẫn được lưu đầy đủ trên đĩa pod, chỉ upload thất bại. Fix nhanh: sửa tay dòng
+`base_model:` trong (các) `README.md` thành HF id đúng (vd. `meta-llama/Llama-3.1-8B-Instruct`) rồi
+gọi lại `vi_secalign.hf_sync.upload_output(...)` tay. Tốt hơn: truyền `--base_model` bằng HF id
+ngay từ đầu thay vì path local — transformers/vllm tự dùng cache local nếu file đã tải sẵn
+(`~/.cache/huggingface`), không tải lại qua mạng, nên không mất tốc độ.
 
 **`hf: command not found`** — không có console-script CLI (`huggingface-cli`, `hf`) qua cách cài
 này (`uv pip install --target` không tạo shim). Mọi thao tác HF đều qua Python API

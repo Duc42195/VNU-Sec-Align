@@ -1320,6 +1320,56 @@
 
 ---
 
+### #33 — T9 train xong (N=38.314 thật) nhưng TOÀN BỘ checkpoint suýt mất: `HF_HUB_OFFLINE=1` chặn cả upload; pod mất mạng ra ngoài đúng lúc train xong; đã cứu qua SFTP trực tiếp; fix retry+manifest cho `hf_sync.py`
+
+- **Context:** `train_dpo.py` (Decision #31, `--base_model` path local + `HF_HUB_OFFLINE=1`) chạy
+  xong hoàn toàn: `train_runtime=43164.9s` (~12h, đúng ước lượng), `train_loss` TB=**0.01711**,
+  step cuối loss 0.0002-0.003, `rewards/accuracies` đạt **1.0**, margins 26-27 — tổng thời gian từ
+  lúc khởi động (gồm precompute 3h26m) tới lúc xong ≈ 15h25m. Ngay sau khi log in ra kết quả cuối,
+  cả 2 lần upload checkpoint (mỗi `save_steps=200` VÀ lần cuối) đều báo lỗi.
+- **Decision:**
+  1. **Bug thật #1 — đã tự nhận nhầm ở Decision #31**: `HF_HUB_OFFLINE=1` (thêm vào để né lỗi mạng
+     lúc resolve `--base_model`) **chặn LUÔN `upload_output()`**, không chỉ chặn download như đã
+     khẳng định sai ở Decision #31. Lỗi thật: `Cannot reach https://huggingface.co/api/validate-yaml:
+     offline mode is enabled`. Hậu quả: **TOÀN BỘ ~18 lần upload checkpoint trung gian trong suốt
+     12h train đều thất bại âm thầm** (soft-fail by design của `hf_sync.py` — chỉ print, không
+     raise) — chỉ phát hiện ra khi kiểm tra HF sau khi train xong, thấy chỉ có đúng 1 checkpoint rác
+     cũ (`checkpoint-21`, Decision #32) chứ không có checkpoint T9 thật nào.
+  2. **Sự cố thật #2 — pod mất mạng ra ngoài hoàn toàn đúng lúc train vừa xong** (không phải do
+     code): xác nhận bằng `curl` tới `huggingface.co`/`google.com`/`github.com`, cả IPv4 lẫn IPv6
+     đều timeout hoàn toàn (`http_code:000`). Thử `unset HF_HUB_OFFLINE` rồi upload lại vẫn thất
+     bại vì lý do NÀY, không phải lý do #1 nữa. Không sửa được từ trong pod — đây là sự cố hạ tầng
+     ckey.vn thật, đã kiểm tra kỹ (DNS vẫn phân giải được, chỉ riêng kết nối TCP/TLS ra ngoài chết).
+  3. **Cứu dữ liệu**: kênh SSH/SFTP vào pod vẫn hoạt động bình thường (chỉ mạng RA NGOÀI của pod
+     chết, không phải toàn bộ kết nối) — kéo trực tiếp checkpoint cuối (`adapter_model.safetensors`
+     562MB + config/tokenizer) về máy laptop qua SFTP (`paramiko`), KHÔNG cần pod có mạng ra ngoài.
+     Xác nhận toàn vẹn bằng `sha256sum` so khớp remote/local + tự viết script Python thuần đọc
+     header `.safetensors` (không cần cài `torch`/`peft`) xác nhận kích thước file khớp chính xác
+     với offset khai báo trong header — không bị cắt cụt giữa chừng.
+  4. **Fix code cho `hf_sync.py`** (áp dụng từ lần chạy sau, không ảnh hưởng dữ liệu T9 đã có):
+     - `upload_output()` giờ ép `HF_HUB_OFFLINE=0` cho riêng lệnh gọi đó (khôi phục giá trị cũ sau
+       khi xong) — không phụ thuộc caller có set cờ offline vì lý do khác hay không.
+     - Retry 3 lần, backoff 15s/45s/90s — xử lý được lỗi mạng CHỚP NHOÁNG (khác sự cố #2, vốn kéo
+       dài, retry không cứu được, nhưng manifest ở dưới thì có).
+     - Thất bại sau khi hết retry → ghi vào `.hf_upload_failures.log` (path local + đích HF + lỗi)
+       thay vì chỉ print rồi mất dấu — thêm `retry_failed_uploads()` để quét lại toàn bộ manifest
+       1 lệnh duy nhất khi mạng phục hồi.
+  5. `to-do.md` đã cập nhật bỏ khuyến nghị `HF_HUB_OFFLINE=1` (SAI, đã tự sửa lại 2 lần trong cùng
+     file — ghi rõ cả 2 lần sửa để không lặp lại vòng lặp sai-sửa-sai này nữa).
+- **Rejected alternatives:** (a) Tiếp tục đợi mạng pod tự phục hồi rồi mới upload — loại, không có
+  ETA rõ ràng, rủi ro pod hết hạn thuê (24h) hoặc bị xoá trước khi mạng về; SFTP cứu ngay an toàn
+  hơn nhiều. (b) Dùng `scp`/`rsync` qua subprocess thay vì `paramiko` SFTP thuần Python — không cần
+  thiết, `paramiko` đã có sẵn trong scratchpad venv từ trước, không phải cài thêm gì.
+- **Consequences:** Checkpoint T9 thật (LoRA adapter, N=38.314, 3 epoch, `max_length=2048`) đã an
+  toàn trên máy local (`checkpoints/phase1_5_vi/`, đang verify toàn vẹn). **Chưa upload lên HF** —
+  cần làm khi mạng pod phục hồi HOẶC upload thẳng từ máy local (đã có file, không cần qua pod nữa).
+  `hf_sync.py` đã cứng cáp hơn cho các lần chạy sau (T9b, và mọi script khác dùng chung module này).
+  Bài học tổng quát quan trọng nhất: **không bao giờ set `HF_HUB_OFFLINE` cho một tiến trình vừa
+  cần load model vừa cần upload output trong cùng lần chạy** — 2 nhu cầu mạng đối lập nhau, cờ
+  offline chỉ nên dùng cho tiến trình THUẦN đọc, không có bước ghi/upload nào sau đó.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

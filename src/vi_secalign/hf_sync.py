@@ -18,9 +18,35 @@ itself.
 from __future__ import annotations
 
 import os
+import time
 from pathlib import Path
 
 DEFAULT_REPO_ID = "Jason-42195/VNU-SecAlign"
+
+# 2026-09-30 (record.md Decision #33): real T9 training run lost ALL ~18 intermediate checkpoint
+# uploads over a ~12h run -- two independent real causes found the hard way:
+#   1. HF_HUB_OFFLINE=1 (set to dodge a `--base_model` network-resolve issue, see Decision #31)
+#      silently blocks upload_output() too -- huggingface_hub checks the offline flag even for
+#      the upload path's metadata validation call (`/api/validate-yaml`), not just downloads.
+#      Confirmed real: "Cannot reach https://huggingface.co/api/validate-yaml: offline mode is
+#      enabled." Fix here: force the flag off for the duration of the upload call regardless of
+#      what the calling process has set, since an upload always needs real network by definition.
+#   2. A genuine pod network outage (confirmed via curl to huggingface.co/google.com/github.com,
+#      IPv4 and IPv6 both timing out) -- no amount of retrying helps while the outage lasts, but
+#      a real transient blip (much more common than a full outage) does recover within seconds to
+#      low minutes. Added retry-with-backoff for that case, plus a local failure manifest so a
+#      TOTAL outage (like this one) still leaves a precise, greppable list of what still needs
+#      uploading once network is back -- instead of having to diff HF's file listing by hand.
+_UPLOAD_RETRY_DELAYS_S = (15, 45, 90)  # 3 retries: ~15s, 45s, 90s backoff
+_FAILURE_MANIFEST = Path(".hf_upload_failures.log")
+
+
+def _record_upload_failure(local_path: Path, dest: str, repo_id: str, error: Exception) -> None:
+    import datetime
+
+    with open(_FAILURE_MANIFEST, "a") as f:
+        f.write(f"{datetime.datetime.now(datetime.UTC).isoformat()}\t{local_path}\t{repo_id}:{dest}\t{error}\n")
+    print(f"[hf_sync] Ghi lại vào {_FAILURE_MANIFEST} để retry sau -- KHÔNG mất dấu vết như lần trước.")
 
 
 def upload_output(local_path: str | Path, dest_subdir: str, repo_id: str = DEFAULT_REPO_ID) -> str | None:
@@ -28,7 +54,9 @@ def upload_output(local_path: str | Path, dest_subdir: str, repo_id: str = DEFAU
 
     `dest_subdir` should name the producing script (e.g. "sep_reference_gen", "vi_preference_gen")
     so multiple scripts' outputs don't collide. Returns the resulting HF path, or None if the
-    upload was skipped/failed (see module docstring -- soft-fail by design).
+    upload was skipped/failed (see module docstring -- soft-fail by design). Retries transient
+    network failures with backoff (see Decision #33); a failure that survives all retries is
+    appended to `.hf_upload_failures.log` in the cwd for a later manual/scripted re-upload pass.
     """
     token = os.environ.get("HF_TOKEN")
     if not token:
@@ -48,21 +76,39 @@ def upload_output(local_path: str | Path, dest_subdir: str, repo_id: str = DEFAU
 
     api = HfApi()
     dest_root = f"pod_outputs/{dest_subdir}"
-    try:
-        if local_path.is_dir():
-            api.upload_folder(repo_id=repo_id, repo_type="model", folder_path=str(local_path),
-                               path_in_repo=f"{dest_root}/{local_path.name}", token=token)
-            dest = f"{dest_root}/{local_path.name}"
-        else:
-            dest = f"{dest_root}/{local_path.name}"
-            api.upload_file(repo_id=repo_id, repo_type="model", path_or_fileobj=str(local_path),
-                             path_in_repo=dest, token=token)
-    except Exception as e:  # noqa: BLE001 -- soft-fail by design, see module docstring
-        print(f"[hf_sync] Upload of {local_path} failed: {e}")
-        return None
+    dest = f"{dest_root}/{local_path.name}"
 
-    print(f"[hf_sync] Uploaded {local_path} -> {repo_id}:{dest}")
-    return dest
+    # Force-allow network for this call even if the caller set HF_HUB_OFFLINE=1 for an unrelated
+    # reason (e.g. avoiding a --base_model resolve-over-network issue) -- an upload always needs
+    # real network, offline mode blocking it is never the caller's intent. Restored after, so it
+    # doesn't change behavior for any other code in the same process.
+    prior_offline = os.environ.get("HF_HUB_OFFLINE")
+    os.environ["HF_HUB_OFFLINE"] = "0"
+    try:
+        last_error: Exception | None = None
+        for attempt, delay in enumerate((0, *_UPLOAD_RETRY_DELAYS_S)):
+            if delay:
+                print(f"[hf_sync] Retry {attempt}/{len(_UPLOAD_RETRY_DELAYS_S)} upload {local_path} sau {delay}s...")
+                time.sleep(delay)
+            try:
+                if local_path.is_dir():
+                    api.upload_folder(repo_id=repo_id, repo_type="model", folder_path=str(local_path),
+                                       path_in_repo=dest, token=token)
+                else:
+                    api.upload_file(repo_id=repo_id, repo_type="model", path_or_fileobj=str(local_path),
+                                     path_in_repo=dest, token=token)
+                print(f"[hf_sync] Uploaded {local_path} -> {repo_id}:{dest}")
+                return dest
+            except Exception as e:  # noqa: BLE001 -- soft-fail by design, see module docstring
+                last_error = e
+                print(f"[hf_sync] Upload of {local_path} failed (lần {attempt + 1}): {e}")
+        _record_upload_failure(local_path, dest, repo_id, last_error)
+        return None
+    finally:
+        if prior_offline is None:
+            os.environ.pop("HF_HUB_OFFLINE", None)
+        else:
+            os.environ["HF_HUB_OFFLINE"] = prior_offline
 
 
 def download_output(
@@ -106,3 +152,36 @@ def download_output(
     shutil.copy(cached_path, dest)
     print(f"[hf_sync] Downloaded {repo_id}:pod_outputs/{dest_subdir}/{filename} -> {dest}")
     return dest
+
+
+def retry_failed_uploads(manifest_path: str | Path = _FAILURE_MANIFEST) -> list[str]:
+    """Re-attempts every upload logged in `.hf_upload_failures.log` (see upload_output's retry/
+    manifest logic, Decision #33). Run this once network is confirmed back up -- e.g.:
+        python3 -c "from vi_secalign.hf_sync import retry_failed_uploads; retry_failed_uploads()"
+    Truncates the manifest to only the entries that still fail (so a second run only retries what's
+    still actually broken), and returns the list of local paths that succeeded this pass.
+    """
+    manifest_path = Path(manifest_path)
+    if not manifest_path.exists():
+        print(f"[hf_sync] {manifest_path} không tồn tại -- không có gì để retry.")
+        return []
+
+    lines = manifest_path.read_text().splitlines()
+    still_failing: list[str] = []
+    succeeded: list[str] = []
+    for line in lines:
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue  # malformed line -- skip rather than crash the whole retry pass
+        _, local_path, dest_ref, *_ = parts
+        repo_id, dest = dest_ref.split(":", 1)
+        dest_subdir = dest.removeprefix("pod_outputs/").rsplit("/", 1)[0]
+        result = upload_output(local_path, dest_subdir, repo_id=repo_id)
+        if result is None:
+            still_failing.append(line)
+        else:
+            succeeded.append(local_path)
+
+    manifest_path.write_text("\n".join(still_failing) + ("\n" if still_failing else ""))
+    print(f"[hf_sync] Retry xong: {len(succeeded)} thành công, {len(still_failing)} vẫn thất bại (còn trong {manifest_path}).")
+    return succeeded

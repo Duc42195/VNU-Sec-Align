@@ -50,7 +50,6 @@ Kỳ vọng in ra: `VN: 19157 EN: 19157` rồi `Total: 38314`. Nếu số khác 
 ```bash
 export HF_TOKEN=hf_xxx   # token quyền read/write, đã accept license Llama-3/Llama-3.1
 export PYTHONPATH=/root/repo/src
-export HF_HUB_OFFLINE=1
 cd ~/repo
 nohup python3 -m vi_secalign.training.train_dpo \
   --variant dpo \
@@ -72,8 +71,19 @@ chuẩn `~/.cache/huggingface/hub/` mà `from_pretrained(<HF id>)` tra cứu —
 gọi mạng thật, và mạng pod lúc đó timeout. Dùng PATH LOCAL (`/root/models/llama_3_1_8b_instruct`)
 mới thật sự không cần mạng (đọc thẳng từ đĩa). Đổi lại: chấp nhận phải sửa tay README.md sau khi
 train xong (xem mục lỗi `"base_model" with value ...` bên dưới), đơn giản hơn nhiều so với bị chặn
-hẳn không train được. `HF_HUB_OFFLINE=1` thêm vào để chặn luôn các lệnh gọi mạng phụ khác của
-transformers — không ảnh hưởng bước upload checkpoint (dùng `HfApi` riêng, không bị cờ này chặn).
+hẳn không train được.
+
+**2026-09-30, SỬA LẠI LẦN 2 (bài học nghiêm trọng hơn, xem record.md Decision #33)**: bản trên
+từng khuyên thêm `HF_HUB_OFFLINE=1` "để chặn gọi mạng phụ, không ảnh hưởng upload checkpoint" —
+**SAI HOÀN TOÀN**. Xác nhận thật: `HF_HUB_OFFLINE=1` chặn LUÔN cả `upload_output()` (lỗi thật gặp
+phải: `Cannot reach https://huggingface.co/api/validate-yaml: offline mode is enabled`) — hậu quả
+là **toàn bộ ~18 checkpoint trung gian của lần train N=38.314 đầu tiên KHÔNG upload được**, chỉ có
+trên đĩa pod, suýt mất khi pod gặp sự cố mạng ra ngoài đúng lúc training vừa xong. ĐÃ BỎ
+`HF_HUB_OFFLINE` khỏi lệnh trên — dùng path local cho `--base_model` đã đủ để tránh gọi mạng lúc
+load model, không cần thêm cờ offline nữa. `hf_sync.py::upload_output()` giờ đã có retry tự động
+(3 lần, backoff 15/45/90s) + ghi `.hf_upload_failures.log` nếu vẫn thất bại sau khi hết retry —
+chạy `python3 -c "from vi_secalign.hf_sync import retry_failed_uploads; retry_failed_uploads()"`
+sau khi mạng phục hồi để upload lại hàng loạt những gì đã lỡ mất.
 
 **Theo dõi**: `tail -f /root/train_t9.log`. Ước lượng thời gian: N=38.314, batch hiệu dụng 32,
 3 epoch → `ceil(3×38314/32)` ≈ **3593 step** × 12.31s/step ≈ **12.3h** (đo thật trên chính GPU này ở

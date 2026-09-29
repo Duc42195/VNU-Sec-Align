@@ -40,20 +40,19 @@ huggingface_hub[hf_transfer]' > /tmp/t10_requirements.txt
 colab install -s t10 -r /tmp/t10_requirements.txt
 ```
 
-## 4. Upload data benchmark + script (nhỏ, vài trăm KB tổng)
+## 4. (KHÔNG CẦN NỮA) — bài học thật, 2026-09-30
 
-```bash
-cd /home/j/Workspace/VNU/Final
-colab exec -s t10 <<< "import os; os.makedirs('data/benchmarks/vi_injecteval', exist_ok=True); os.makedirs('data/benchmarks/cyberseceval2', exist_ok=True); os.makedirs('data/benchmarks/mmlu', exist_ok=True); os.makedirs('data/benchmarks/alpacafarm', exist_ok=True)"
+Bản đầu của manual này bảo `colab upload` 5 file JSON benchmark nhỏ lên VM trước khi chạy — **lỗi
+thật**: `colab upload` báo `500 Internal Server Error` cho cả 5 file (nghi do thư mục đích tạo qua
+`colab exec <<< "os.makedirs(...)"` không nhận đúng, hoặc bug server-side của chính CLI). Sửa:
+`t10_vn_asr_eval.py` giờ **tự tải 5 file pilot từ HF** (đã upload sẵn lên
+`Jason-42195/VNU-SecAlign:pod_outputs/benchmarks/...`) ngay khi import — không cần `colab upload`
+bất kỳ file data nào nữa, chỉ cần transfer đúng 1 file `.py` ở bước 5 (chính `colab exec -f` đã tự
+đọc file local và gửi nội dung qua, không cần upload trước — xem "Transparent Code Execution" trong
+README của `google-colab-cli`). Đúng góp ý: chỉ "upload" code (qua `exec -f`, không phải lệnh
+`upload`), data tải bằng code (`hf_hub_download`) tại runtime.
 
-colab upload -s t10 data/benchmarks/vi_injecteval/pilot_v0_1.json data/benchmarks/vi_injecteval/pilot_v0_1.json
-colab upload -s t10 data/benchmarks/vi_injecteval/pilot_v0_1_en_matched.json data/benchmarks/vi_injecteval/pilot_v0_1_en_matched.json
-colab upload -s t10 data/benchmarks/cyberseceval2/pilot_v0.json data/benchmarks/cyberseceval2/pilot_v0.json
-colab upload -s t10 data/benchmarks/mmlu/pilot_v0.json data/benchmarks/mmlu/pilot_v0.json
-colab upload -s t10 data/benchmarks/alpacafarm/pilot_v0.json data/benchmarks/alpacafarm/pilot_v0.json
-```
-
-## 5. Chạy eval (script tự tải model+LoRA từ HF, sinh + chấm điểm 5 bộ benchmark)
+## 5. Chạy eval (script tự tải data pilot + model+LoRA từ HF, sinh + chấm điểm 5 bộ benchmark)
 
 ```bash
 colab exec -s t10 -f notebooks/t10_vn_asr_eval.py

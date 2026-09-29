@@ -56,21 +56,47 @@ BNB_CONFIG = BitsAndBytesConfig(
     bnb_4bit_use_double_quant=True,
 )
 
-DATA_DIR = Path("data/benchmarks")
 RESULTS_DIR = Path("results/phase3_t10_held_out")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
+# 2026-09-30: tự TẢI 5 file pilot nhỏ (vài trăm KB tổng) từ HF thay vì đợi `colab upload` --
+# `colab upload` của google-colab-cli lỗi 500 Internal Server Error thật khi thử upload 5 file
+# này (xem .agents/record.md). Chỉ cần transfer đúng 1 file .py này qua `colab exec -f` (không cần
+# upload gì thêm) -- code tự pull data qua mạng, đúng góp ý "chỉ upload code, không upload data".
+PILOT_FILES = {
+    "vi_injecteval": "pilot_v0_1.json",
+    "vi_injecteval_en_matched": "pilot_v0_1_en_matched.json",
+    "cyberseceval2": "pilot_v0.json",
+    "mmlu": "pilot_v0.json",
+    "alpacafarm": "pilot_v0.json",
+}
+_PILOT_SUBDIR = {
+    "vi_injecteval": "benchmarks/vi_injecteval",
+    "vi_injecteval_en_matched": "benchmarks/vi_injecteval",
+    "cyberseceval2": "benchmarks/cyberseceval2",
+    "mmlu": "benchmarks/mmlu",
+    "alpacafarm": "benchmarks/alpacafarm",
+}
 
-def load_pilot(path: Path) -> list[dict]:
+
+def load_pilot(key: str) -> list[dict]:
+    from huggingface_hub import hf_hub_download
+
+    filename = PILOT_FILES[key]
+    subdir = _PILOT_SUBDIR[key]
+    path = hf_hub_download(
+        repo_id="Jason-42195/VNU-SecAlign", repo_type="model",
+        filename=f"pod_outputs/{subdir}/{filename}",
+    )
     with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
-VI_INJECTEVAL_PILOT = load_pilot(DATA_DIR / "vi_injecteval" / "pilot_v0_1.json")
-EN_MATCHED_PILOT = load_pilot(DATA_DIR / "vi_injecteval" / "pilot_v0_1_en_matched.json")
-CYBERSECEVAL2_PILOT = load_pilot(DATA_DIR / "cyberseceval2" / "pilot_v0.json")
-MMLU_PILOT = load_pilot(DATA_DIR / "mmlu" / "pilot_v0.json")
-ALPACAFARM_PILOT = load_pilot(DATA_DIR / "alpacafarm" / "pilot_v0.json")
+VI_INJECTEVAL_PILOT = load_pilot("vi_injecteval")
+EN_MATCHED_PILOT = load_pilot("vi_injecteval_en_matched")
+CYBERSECEVAL2_PILOT = load_pilot("cyberseceval2")
+MMLU_PILOT = load_pilot("mmlu")
+ALPACAFARM_PILOT = load_pilot("alpacafarm")
 
 REFUSAL_PATTERNS = [
     r"i can'?t (assist|help|provide|comply)",

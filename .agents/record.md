@@ -1378,6 +1378,48 @@
 
 ---
 
+### #34 — Bắt đầu T10 (VN_ASR held-out sau T9); tìm ra `google-colab-cli`; bug thật `colab upload` 500 error, fix bằng tải data qua code thay vì upload file
+
+- **Context:** T9 xong (Decision #33), bắt đầu T10 (đánh giá VN_ASR sau train, so với baseline GĐ2).
+  Người dùng chỉ định công cụ cụ thể: `google-colab-cli` (github.com/googlecolab/google-colab-cli)
+  — CLI chính thức của Google, cấp phát VM Colab thật (CPU/GPU/TPU) qua terminal, không cần mở
+  trình duyệt thao tác tay.
+- **Decision:**
+  1. Cài (`uv tool install google-colab-cli`), xác thực OAuth (cần đăng nhập Google tương tác, chỉ
+     người dùng làm được), verify chức năng thật: tạo session T4, chạy `nvidia-smi` qua `colab exec`
+     — xác nhận `Tesla T4, 15360 MiB, compute_cap 7.5` thật, không phải giả lập.
+  2. Viết `notebooks/t10_vn_asr_eval.py`: tái sử dụng NGUYÊN VẸN methodology GĐ2
+     (`phase1_rq1_zero_shot.ipynb` — cùng 5 bộ pilot benchmark, cùng witness-matching, cùng hàm
+     `generate_batch`/`is_refusal`/`looks_vietnamese`), chỉ thêm 1 model mới (`phase1_5_vi_joint`,
+     checkpoint T9 LoRA) để số liệu so sánh trực tiếp được với baseline đã đo
+     (`llama_3_1_8b_instruct` vn_asr=0.54, `meta_secalign_8b` vn_asr=0.10). `bnb_4bit_compute_dtype`
+     dùng fp16 (không bf16) — khớp lý do đã biết (T4/Turing không có bf16 tensor core native).
+  3. **Bug thật tìm được**: `colab upload` (lệnh CLI chính thức để đẩy file lên VM) báo
+     `500 Internal Server Error` cho cả 5 file JSON benchmark nhỏ (vài trăm KB) — thử tạo thư mục
+     đích trước bằng `colab exec <<< "os.makedirs(...)"` cũng không giúp. Nghi bug server-side của
+     chính CLI (chưa xác định được nguyên nhân sâu hơn, không có log chi tiết hơn để debug từ phía
+     client).
+  4. **Fix theo đúng góp ý người dùng — "chỉ upload code, tải data bằng code"**: đã upload 5 file
+     pilot lên `Jason-42195/VNU-SecAlign:pod_outputs/benchmarks/<category>/` (dùng
+     `hf_sync.upload_output()` có sẵn) rồi sửa `t10_vn_asr_eval.py` tự `hf_hub_download()` 5 file
+     này lúc import — không cần `colab upload` nữa, chỉ cần `colab exec -f` (vốn tự đọc + transmit
+     nội dung file .py local, không cần upload trước, theo đúng "Transparent Code Execution" của
+     chính CLI).
+  5. **Bug thật thứ 2 tự gây ra, tự phát hiện + sửa ngay**: lần upload đầu dùng chung
+     `dest_subdir="benchmarks"` cho cả 5 file — 3 file (`cyberseceval2`, `mmlu`, `alpacafarm`) đều
+     tên `pilot_v0.json`, ghi ĐÈ LÊN NHAU tại `pod_outputs/benchmarks/pilot_v0.json` (chỉ file cuối
+     cùng — `alpacafarm` — còn sống sót). Fix: dùng `dest_subdir` riêng theo category
+     (`benchmarks/<category>/`). Đã xoá 3 file rác cũ ở path phẳng sau khi xác nhận path mới đúng.
+- **Rejected alternatives:** Debug sâu hơn nguyên nhân `colab upload` 500 error (vd. thử API trực
+  tiếp, đọc source code CLI) — loại, tốn thời gian không cần thiết khi đã có cách né hoàn toàn hợp
+  lý (tải qua HF, vốn đã là pattern chuẩn của cả dự án).
+- **Consequences:** `notebooks/t10_vn_asr_eval.py` + `notebooks/T10_MANUAL.md` sẵn sàng chạy — chỉ
+  cần `colab new`/`colab exec -f`/`colab download`/`colab stop`, không cần `colab upload` bước nào.
+  T10 CHƯA CHẠY THẬT (người dùng tự chạy theo manual) — chưa có số liệu VN_ASR thật cho checkpoint
+  T9 tại thời điểm ghi entry này.
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

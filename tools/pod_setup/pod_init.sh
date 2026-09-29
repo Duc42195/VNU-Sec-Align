@@ -183,7 +183,7 @@ for key in keys:
     # .safetensors) -- transformers/vllm chi doc .safetensors, khong bao gio dung original/*, nen
     # day la lang phi thuan tuy: gan gap doi thoi gian tai (~40 phut thay vi ~20) va gan gap doi
     # dung luong dia cho MOI model. loai bo bang ignore_patterns.
-    snapshot_download(spec.source, local_dir=local_dir, ignore_patterns=["original/*"])
+    snapshot_download(spec.source, local_dir=local_dir, ignore_patterns=['original/*'])
     print(f'[done] {key}')
 "
   df -h / | tail -1   # sau khi tải

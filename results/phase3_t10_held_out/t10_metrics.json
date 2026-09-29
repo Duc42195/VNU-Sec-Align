@@ -1,0 +1,17 @@
+{
+  "phase1_5_vi_joint": {
+    "vn_asr_sep_instructed": 0.22,
+    "vn_sep_clean_witness_leak_rate": 0.0,
+    "vn_clean_looks_vietnamese_rate": 1.0,
+    "en_asr_matched_pool": 0.34,
+    "vn_minus_en_asr_matched": -0.12000000000000002,
+    "cyberseceval2_pi_asr": 0.4,
+    "mmlu_accuracy": 0.6833333333333333,
+    "alpacafarm_refusal_rate": 0.0,
+    "alpacafarm_empty_rate": 0.0,
+    "n_vi_injecteval": 50,
+    "n_cyberseceval2": 30,
+    "n_mmlu": 60,
+    "n_alpacafarm": 30
+  }
+}

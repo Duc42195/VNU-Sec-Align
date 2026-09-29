@@ -1420,6 +1420,54 @@
 
 ---
 
+### #35 — T10 chạy thật lần đầu: VN_ASR 0.54→0.22 sau train T9; MẤT `t10_raw_outputs.json` do gộp `colab download` lỗi + `colab stop` cùng 1 loạt lệnh không kiểm tra
+
+- **Context:** Chạy `colab exec -s t10 -f notebooks/t10_vn_asr_eval.py` thật trên T4. Job chạy
+  **~40 phút** (lâu hơn ước lượng 10-20 phút trong manual) — xác nhận KHÔNG treo bằng `colab
+  console` (raw TTY riêng, không đụng tới kernel đang bận): `nvidia-smi` cho thấy GPU utilization
+  49%, VRAM 8.5/15.4GB, process kernel Python ở state `R` (running) với CPU time tích luỹ thật —
+  chỉ là sinh 256 token/mẫu × nhiều batch trên T4 4-bit chậm hơn dự tính, không phải bug.
+- **Decision:**
+  1. **Kết quả VN_ASR thật đầu tiên cho checkpoint T9** (`phase1_5_vi_joint`, N=38.314, 3 epoch):
+     - `vn_asr_sep_instructed = 0.22` (so với baseline GĐ2: `llama_3_1_8b_instruct`=0.54,
+       `meta_secalign_8b`=0.10) — **giảm đáng kể so với base (0.54→0.22, ~59% relative)**, nhưng
+       vẫn cao hơn nhiều so với defense EN gốc của Meta (0.10).
+     - `en_asr_matched_pool = 0.34` (so với base=0.84, meta_secalign_8b=0.02) — phía EN cũng giảm
+       mạnh (hợp lý, vì T9 là joint training EN+VN).
+     - `vn_minus_en_asr_matched = -0.12` (so với base=-0.30, meta_secalign_8b=+0.08) — LƯU Ý: cả
+       baseline `llama_3_1_8b_instruct` (chưa train) đã có giá trị ÂM (-0.30) trên phép đo
+       matched-pool này, tức ngay ở model CHƯA train, EN_ASR (matched) đã cao hơn VN_ASR — khác
+       hướng với trực giác RQ1 ban đầu (dựa trên so sánh SEP vs VN không matched, Decision #15).
+       **Chưa diễn giải sâu ở đây — cần đối chiếu lại với RQ1/Decision #15/#17 trước khi viết vào
+       draft, không tự kết luận vội.**
+     - `cyberseceval2_pi_asr=0.40`, `mmlu_accuracy=0.683` (gần bằng base 0.65, không sập utility).
+  2. **Bug thật — mất `t10_raw_outputs.json`**: `colab download` báo lỗi
+     `File or directory not found` cho CẢ 2 file kết quả (nghi remote path không khớp cwd thật của
+     session lúc `colab exec -f` chạy — chưa xác định chính xác nguyên nhân, session đã bị xoá
+     không debug thêm được nữa). Lỗi vận hành nghiêm trọng hơn: 2 lệnh download lỗi và `colab stop`
+     được gộp chung 1 lệnh Bash, `colab stop` vẫn chạy dù download đã lỗi → session (đĩa ephemeral)
+     bị xoá vĩnh viễn. Chỉ cứu được `t10_metrics.json` vì đã lỡ `colab exec` in nội dung ra màn
+     hình ở bước trước đó (thủ công, không phải cơ chế an toàn thật). `t10_raw_outputs.json` (câu
+     trả lời thô model sinh ra cho từng mẫu, cần cho audit/manual check sau này) **MẤT VĨNH VIỄN**,
+     phải chạy lại nếu cần.
+  3. **Fix code — cùng bài học tổng quát với Decision #33**: "không phụ thuộc 1 bước thủ công để
+     bảo toàn dữ liệu quan trọng, tự động hoá NGAY LÚC sinh ra". Sửa `t10_vn_asr_eval.py`: script
+     tự upload cả 2 file kết quả lên HF (`pod_outputs/t10_held_out_eval/`) ngay cuối `main()`, dùng
+     `HfApi` trực tiếp (KHÔNG import `vi_secalign.hf_sync` — package đó không có trên Colab VM, chỉ
+     đúng 1 file `.py` được transfer qua `colab exec -f`). `T10_MANUAL.md` thêm quy tắc bắt buộc:
+     nếu vẫn dùng `colab download` thủ công, phải xác nhận CẢ HAI lệnh in `Downloaded` (không có
+     `failed`) TRƯỚC KHI chạy `colab stop` — không bao giờ gộp chung không kiểm tra giữa chừng.
+- **Rejected alternatives:** Thử debug sâu nguyên nhân path lỗi của `colab download` — không thể,
+  session đã bị xoá, không còn gì để debug thêm; chấp nhận fix bằng auto-upload (robust hơn debug
+  1 lệnh CLI của bên thứ 3 dù sao cũng nên né phụ thuộc).
+- **Consequences:** T10 có số liệu VN_ASR thật đầu tiên (`results/phase3_t10_held_out/t10_metrics.json`,
+  đã lưu lại + upload HF `pod_outputs/t10_held_out_eval/`). `t10_raw_outputs.json` mất, cần chạy lại
+  script (đã fix, ~40 phút, rẻ) nếu cần audit câu trả lời thô. Điểm cần làm rõ trước khi viết draft:
+  đối chiếu chiều dấu của `vn_minus_en_asr_matched` ở baseline với phát biểu RQ1 gốc — có thể là
+  phát hiện thật cần điều chỉnh cách trình bày RQ1, không phải lỗi đo lường (chưa xác định).
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

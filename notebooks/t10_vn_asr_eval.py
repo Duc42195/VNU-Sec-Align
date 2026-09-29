@@ -270,10 +270,34 @@ def main():
         print(json.dumps(results[model_key], indent=2, ensure_ascii=False))
         unload_model(model)
 
-    with open(RESULTS_DIR / "t10_metrics.json", "w", encoding="utf-8") as f:
+    metrics_path = RESULTS_DIR / "t10_metrics.json"
+    raw_path = RESULTS_DIR / "t10_raw_outputs.json"
+    with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    with open(RESULTS_DIR / "t10_raw_outputs.json", "w", encoding="utf-8") as f:
+    with open(raw_path, "w", encoding="utf-8") as f:
         json.dump(raw_outputs, f, indent=2, ensure_ascii=False)
+
+    # 2026-09-30: tự upload kết quả lên HF ngay tại đây thay vì đợi `colab download` thủ công sau
+    # -- bài học thật (record.md Decision #35): lần chạy đầu, `colab download` báo "File or
+    # directory not found" (path remote không khớp cwd thật của session) NGAY TRƯỚC KHI kịp phát
+    # hiện, `colab stop` đã chạy trong cùng 1 loạt lệnh -- session (đĩa ephemeral) bị xoá, MẤT HẲN
+    # `t10_raw_outputs.json` (chỉ `t10_metrics.json` cứu được vì đã lỡ in ra màn hình trước đó).
+    # Đúng bài học tổng quát của Decision #33: không phụ thuộc 1 bước tải-về-thủ-công để bảo toàn
+    # dữ liệu quan trọng -- tự động hoá upload NGAY LÚC sinh ra, trong cùng tiến trình.
+    # Tự chứa (không import vi_secalign.hf_sync -- package đó KHÔNG có trên Colab VM, chỉ đúng 1
+    # file .py này được transfer qua `colab exec -f`).
+    try:
+        from huggingface_hub import HfApi
+
+        api = HfApi()
+        for p in (metrics_path, raw_path):
+            api.upload_file(
+                repo_id="Jason-42195/VNU-SecAlign", repo_type="model",
+                path_or_fileobj=str(p), path_in_repo=f"pod_outputs/t10_held_out_eval/{p.name}",
+            )
+            print(f"[t10] Uploaded {p} -> Jason-42195/VNU-SecAlign:pod_outputs/t10_held_out_eval/{p.name}")
+    except Exception as e:  # noqa: BLE001 -- không để lỗi upload làm mất kết quả đã in ra
+        print(f"[t10] Tự upload thất bại: {e} -- nhớ `colab download` tay ngay, đừng `colab stop` trước khi xác nhận tải xong.")
 
     print("\n=== SO SÁNH VỚI BASELINE GĐ2 (chưa train VN) ===")
     for k, v in results.items():

@@ -58,16 +58,30 @@ README của `google-colab-cli`). Đúng góp ý: chỉ "upload" code (qua `exec
 colab exec -s t10 -f notebooks/t10_vn_asr_eval.py
 ```
 
-Thời gian ước lượng: model 8B ở 4-bit NF4 (~5-6GB VRAM) + 5 bộ benchmark nhỏ (50+50+30+60+30=220
-mẫu, batch 16, max 256 token) — khoảng **10-20 phút** trên T4 (chưa tính thời gian tải model lần
-đầu qua mạng, có thể thêm 5-15 phút tuỳ băng thông Colab).
+Thời gian thật đo được (2026-09-30, lần chạy đầu): **~40 phút** trên T4 (chậm hơn ước lượng ban đầu
+10-20 phút — batch generation 256 token/mẫu trên T4 4-bit tốn thời gian hơn dự tính, xem
+`.agents/record.md` Decision #35). GPU utilization ~49% khi đang chạy thật — không phải bug/treo,
+`colab status -s t10` báo `BUSY` suốt thời gian này là bình thường.
 
-## 6. Tải kết quả về
+## 6. Kết quả tự upload lên HF — KHÔNG còn phụ thuộc `colab download`
 
+**2026-09-30, SỬA LẠI (bài học nghiêm trọng, xem Decision #35)**: lần chạy đầu, `colab download`
+báo lỗi `File or directory not found` (path không khớp cwd thật của session) — và `colab stop`
+lỡ chạy ngay sau đó trong cùng 1 loạt lệnh TRƯỚC KHI phát hiện lỗi. Session (đĩa ephemeral) bị xoá
+→ **mất hẳn `t10_raw_outputs.json`** (chỉ `t10_metrics.json` cứu được vì đã lỡ in ra màn hình
+trước đó qua `colab exec` riêng). Đã sửa `t10_vn_asr_eval.py`: script giờ **tự upload cả 2 file
+kết quả lên HF** (`Jason-42195/VNU-SecAlign:pod_outputs/t10_held_out_eval/`) ngay trong `main()`,
+KHÔNG cần `colab download` nữa — chỉ cần chờ script chạy xong (status IDLE) rồi `colab stop` an
+toàn.
+
+**Nếu vẫn muốn có bản local ngay** (không bắt buộc, dữ liệu đã an toàn trên HF):
 ```bash
 colab download -s t10 results/phase3_t10_held_out/t10_metrics.json results/phase3_t10_held_out/t10_metrics.json
 colab download -s t10 results/phase3_t10_held_out/t10_raw_outputs.json results/phase3_t10_held_out/t10_raw_outputs.json
 ```
+**QUY TẮC BẮT BUỘC nếu làm bước này**: xác nhận CẢ HAI lệnh trên in ra `Downloaded ...` (không có
+chữ `failed`) TRƯỚC KHI chạy `colab stop` — không bao giờ gộp download + stop vào cùng 1 loạt lệnh
+không kiểm tra kết quả giữa chừng.
 
 Script tự in bảng so sánh với baseline GĐ2 (`llama_3_1_8b_instruct`: vn_asr=0.54;
 `meta_secalign_8b`: vn_asr=0.10) ngay trong log — xem lại bằng:

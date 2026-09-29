@@ -4,6 +4,33 @@
 > để mở session Claude Code khác vẫn tiếp tục được ngay. Xoá file này sau khi setup xong hẳn
 > và đã bắt đầu chạy N thật cho T9 (lúc đó thông tin ở đây hết giá trị).
 
+## Checklist BẮT BUỘC mỗi lần thuê pod mới (ckey.vn)
+
+Không có hook nào bắt được sự kiện "thuê pod mới" — việc thuê xảy ra trên web ckey.vn, ngoài
+Claude Code, không qua tool call nào cả. Thay vào đó: **agent phải chủ động hỏi đủ 3 nhóm thông
+tin dưới đây ngay khi người dùng đưa SSH của 1 pod mới**, trước khi bắt đầu setup:
+
+1. **Số dư tài khoản hiện tại** (VND) — không phải giá pod, là số dư ví ckey.vn tổng.
+2. **Thông tin pod**:
+   - Giá/giờ (VND/h)
+   - SSH (host:port + password — password thường cố định `Jason42195`, xem
+     [[reference_ckey_pod_password]], nhưng vẫn hỏi host:port vì đổi theo từng lần thuê)
+   - **Tốc độ mạng** — cần tối ưu tỉ lệ hiệu năng/giá, không chỉ chọn rẻ nhất. Đo thật bằng
+     `curl -L -o /dev/null -s -w "%{speed_download} B/s"` trên 1 file public đủ lớn (>10MB) ngay
+     sau khi SSH vào, đừng tin số quảng cáo của listing (đã có tiền lệ thật: pod "5090 laptop"
+     Decision #29 network ~11MB/s dù listing không cảnh báo gì).
+   - **Thời gian thuê tối đa** (thường 24h/lượt ở ckey.vn) — dùng để tính ngược xem đủ chạy hết
+     phần nào của pipeline (sinh data / train) trước khi hết hạn, tránh lặp lại tình huống ước
+     lượng thời gian sai giữa chừng (xem Decision #30/#31: từng thiếu ngân sách ~7-8h vì không
+     tính trước).
+3. **Lưu ý chi phí cố định**: mỗi lần thuê pod mới bị trừ ngay **~30 VND phí khởi tạo** (quan sát
+   thật, không phải lỗi tính tiền) — đừng hoảng khi thấy số dư giảm nhẹ trước khi có bất kỳ việc
+   thật nào chạy.
+
+Dùng ngay các số này để tính "còn train/sinh data được bao lâu" (công thức: số dư ÷ giá/giờ =
+giờ còn dùng được) TRƯỚC khi bắt đầu bất kỳ việc gì tốn GPU — đã có tiền lệ thật phải dừng giữa
+chừng vì tính sau thay vì tính trước (Decision #31).
+
 ## Pod cũ (ckey.vn #105728, RTX 3090 24GB) — ĐÃ XOÁ (2026-09-22)
 
 Người dùng đã xoá pod này sau khi hoàn tất go/no-go pipeline test. SSH/thông tin máy cũ **không
@@ -132,24 +159,41 @@ gì thêm cho các bước sau:
    `pod_outputs/train_dpo/dpo_final/test_dpo_vn200/`. **Lưu ý: run này dùng `--max_length 1536`
    (sai lệch so với 2048 gốc) — không dùng lại config này cho N thật, xem mục "Pod tiếp theo" ở trên.**
 
-## Việc còn lại theo đúng thứ tự (trên pod mới)
+## Pod #4 (n1.ckey.vn:1211, RTX 5090 desktop 32GB thật) — ĐANG DÙNG (2026-09-29)
 
-1. Thuê máy đạt tiêu chí ở trên (Ampere+, VRAM≥32GB), setup lại từ đầu (clone, venv/env cache,
-   `huggingface-cli login`/`HF_TOKEN` — bắt buộc, model gated).
-2. Chạy lại đúng lệnh smoke-test 200 mẫu (`vi_preference_gen.py --n_samples 200` rồi `train_dpo.py`
-   với `--max_length 2048`, KHÔNG dùng 1536 nữa) để đo `giây/step` thật trên máy mới trước khi cam
-   kết N lớn — xem lệnh đầy đủ trong `record.md` Decision #25/#26.
-3. Chốt N cuối cùng cho EN:VN (Decision #21 vẫn treo) dựa trên throughput thật vừa đo.
-4. Chạy `vi_preference_gen.py` với N thật (VN) — đã có sẵn resumability (`--checkpoint_every`,
-   tự resume từ output cũ) nếu cần chạy qua nhiều lượt thuê.
-5. Chạy `en_preference_gen.py` với N thật (EN) — **chưa từng chạy lần nào**, nhiều khả năng cũng
-   dính đúng lỗi `max_model_len` chưa set trong `external/meta_secalign/utils.py` (đã biết, chưa
-   vá — xem Decision #23) vì dùng chung `load_vllm_model`. Vá khi gặp, đừng giả định đã ổn.
-6. Train N thật cho T9 (joint EN+VN) và/hoặc T9b (domain-incremental trên `meta_secalign_8b`,
-   Decision #20) — dùng `--max_length 2048` đúng chuẩn, không cần `--max_length` override nữa nếu
-   máy đủ VRAM.
-7. T10/T10b: đánh giá VN_ASR (và EN_ASR cho T10b) trên **held-out**, so với baseline — đây mới là
-   bằng chứng thật trả lời RQ2, không phải loss curve của smoke test.
+Thuê sau khi pod #3 (Decision #30) hết ngân sách giữa chừng. Xác nhận `nvidia-smi`: RTX 5090
+desktop thật, 32GB VRAM, compute cap 12.0, 32 vCPU, 62GB RAM, 848GB disk, giá **21.818 VND/h**.
+KHÔNG chạy trên WSL (không gặp lại lỗi `-lcuda` của pod #3). Chi tiết đầy đủ (bug tìm được, bài
+học đo lường) ở `record.md` Decision #31 — không lặp lại ở đây.
+
+**Trạng thái T9 hiện tại (cập nhật lần cuối 2026-09-29)**:
+- ✅ VN: 19.157/19.157 mẫu, xong hoàn toàn → `data/preference/vn_preference_n19000.jsonl` (tên
+  file giữ nguyên dù đã top-up từ 19.000, tránh mất resume). Upload HF:
+  `pod_outputs/vi_preference_gen/vn_preference_n19000.jsonl`.
+- ✅ EN: 19.157/19.157 mẫu (= 100% pool hợp lệ thật của `yahma/alpaca-cleaned`), xong hoàn toàn →
+  `data/preference/en_preference_n19157.jsonl`. Upload HF:
+  `pod_outputs/en_preference_gen/en_preference_n19157.jsonl`.
+- ✅ Đã gộp: `data/preference/t9_joint_en_vn.jsonl` (38.314 mẫu = 19.157×2).
+- 🔄 **`train_dpo.py` đang chạy** (biến thể `dpo` plain, `--max_length 2048`,
+  `--base_model /root/models/llama_3_1_8b_instruct` — PHẢI dùng path local, không phải HF id, xem
+  bài học #5 ở Decision #31). Output: `checkpoints/phase1_5_vi/`. Ước lượng tổng thời gian:
+  precompute ref log probs (~3.1h, scale tuyến tính theo N — KHÔNG phải overhead cố định như tưởng
+  ở N=200) + training loop (~12.3h) + upload checkpoint overhead (~1-1.5h) ≈ **~16.6h thật**.
+- Xem `to-do.md` ở gốc repo để có lệnh đầy đủ + mục "Lỗi đã biết" nếu cần resume/debug tiếp.
+
+## Việc còn lại theo đúng thứ tự (sau khi T9 train xong)
+
+1. Kiểm tra log cuối `train_t9.log`: xác nhận loss/`rewards/accuracies` giảm/tăng hợp lý (tham
+   khảo N=200: loss 0.417→0.063, accuracies 85.8%→98.6% — N=38.314 nên tốt hơn hoặc tương đương,
+   không nhất thiết y hệt).
+2. Ghi Decision đóng vào `record.md` (kết quả thật N=38.314 — số liệu đầu tiên ở quy mô này, thay
+   thế mọi ước lượng ngoại suy từ N=200 trước đó).
+3. **T9b (domain-incremental)** — chạy song song/sau đó, dùng RIÊNG `vn_preference_n19000.jsonl`
+   (19.157 mẫu, không gộp EN), continue-train từ `meta_secalign_8b` — xem Decision #20. Chưa chạy.
+4. **T10/T10b**: đánh giá VN_ASR (và EN_ASR cho T10b) trên **held-out**, so với baseline GĐ2 — đây
+   mới là bằng chứng thật trả lời RQ2, không phải loss curve của training. Chưa chạy.
+5. Cập nhật `plan.csv` T9/T9b Status — theo `.agents/CLAUDE.md` mục 2, chỉ người dùng hoặc hook
+   DoD được set `Done`, agent chỉ ghi chú kết quả vào cột Ghi chú.
 
 ## Quyết định liên quan (đã ghi ở record.md, không lặp lại chi tiết ở đây)
 
@@ -162,3 +206,8 @@ gì thêm cho các bước sau:
   được, cái gì buộc phải đổi.
 - Decision #26: quyết định thuê GPU ≥32GB Ampere+ thay 3090, đã khảo giá V100/RTX 8000/RTX 5090,
   công thức so sánh chi phí.
+- Decision #29/#30: pod "5090 laptop" (24GB, không đạt) → pod 5090 desktop thật (32GB, thành công,
+  `train_dpo.py --max_length 2048` không OOM lần đầu).
+- Decision #31: chốt N thật T9 = 19.157/19.157 (100% pool EN), 4 bug/bài học mới (syntax error
+  `pod_init.sh`, `trust_remote_code` Bactrian-X, HF id vs local path cho `--base_model`, precompute
+  scale tuyến tính theo N) — training đang chạy tại thời điểm ghi.

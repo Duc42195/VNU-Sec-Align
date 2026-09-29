@@ -1212,6 +1212,82 @@
 
 ---
 
+### #31 — Chốt N thật cho T9 = 19.157/19.157 (100% pool hợp lệ EN); sinh xong cả 2 phía; train đang chạy; 4 bug/bài học mới
+
+- **Context:** Tiếp nối Decision #30. Người dùng hỏi lại: EN có trần thật 19.157 (đo trực tiếp, xem
+  Decision trước) — vậy sao không dùng đúng 100% thay vì làm tròn 19.000? Quyết định: **VN cũng
+  top-up lên đúng 19.157** để 2 bên bằng nhau tuyệt đối (không chỉ "gần bằng"), tận dụng cơ chế
+  resume sẵn có (chạy lại đúng lệnh với `--n_samples 19157`, seed không đổi → tự nhận diện 19.000
+  mẫu đã có, chỉ sinh thêm 157 mẫu qua vLLM, không sinh lại từ đầu).
+- **Decision:**
+  1. Thuê **pod #4** (`n1.ckey.vn:1211`) sau khi pod #3 (Decision #30) hết ngân sách giữa chừng —
+     xác nhận `nvidia-smi`: RTX 5090 **desktop thật** 32GB, compute cap 12.0, 32 vCPU, 62GB RAM,
+     848GB disk, giá 21.818 VND/h. KHÔNG chạy trên WSL (không có path `/usr/lib/wsl/...` nào xuất
+     hiện, không gặp lại lỗi `-lcuda` của Decision #30) — xác nhận lỗi đó đặc thù theo host, không
+     phải lỗi chung của mọi pod.
+  2. **Bug thật #1 — `SyntaxError` trong `pod_init.sh`**: dòng tự thêm ở Decision #30
+     (`ignore_patterns=["original/*"]`) dùng double-quote lồng bên trong khối
+     `python3 -c "..."` (cũng double-quote) — bash nuốt mất cặp quote đó, ra
+     `ignore_patterns=[original/*]` (thiếu quote) → `SyntaxError` thật khi chạy trên pod #4. Fix:
+     đổi sang single-quote (`ignore_patterns=['original/*']`), khớp quy ước phần còn lại của
+     heredoc (commit `112fabb`). Bài học: mọi string literal Python nhúng trong `python3 -c "..."`
+     PHẢI dùng single-quote, không được double-quote.
+  3. **Bug thật #2 — `load_dataset("MBZUAI/Bactrian-X", "vi")` treo/lỗi vì thiếu
+     `trust_remote_code=True`**: Bactrian-X có loading script tuỳ chỉnh, `datasets` tự hỏi xác nhận
+     tương tác. Lần đầu chạy (sinh 19.000 mẫu) qua trót lọt (nghi do stdin đóng hoàn toàn dưới
+     `nohup` resolve ngẫu nhiên thành "yes"); lần sau (top-up lên 19.157, qua kênh SSH khác) treo
+     vô thời hạn rồi lỗi `ValueError`. Fix: thêm `trust_remote_code=True` tường minh vào
+     `_load_vi_corpus()` (commit `19a1e52`). Đã thử fix tương tự cho `en_preference_gen.py`
+     (phòng hờ) nhưng **bị chặn bởi bộ lọc an toàn tự động của Claude Code** (nghi ngờ nhầm cụm từ
+     "trust_remote_code"/"bypass" trong nội dung sửa) — không cố lách qua công cụ khác; bỏ qua vì
+     có bằng chứng thật là `yahma/alpaca-cleaned` không cần cờ này (smoke-test EN trước đó đã chạy
+     trót lọt qua `nohup` không lỗi).
+  4. **Sinh xong cả 2 phía, đúng 19.157/19.157**: VN → `data/preference/vn_preference_n19000.jsonl`
+     (tên file giữ nguyên dù đã top-up, tránh mất resume), EN →
+     `data/preference/en_preference_n19157.jsonl`. Cả 2 đã upload HF
+     (`pod_outputs/vi_preference_gen/`, `pod_outputs/en_preference_gen/`). Người dùng tự gộp thành
+     `data/preference/t9_joint_en_vn.jsonl` (38.314 mẫu) theo hướng dẫn `to-do.md`.
+  5. **Bug thật #3 — dùng HF id làm `--base_model` chặn hẳn việc train**: `to-do.md` bản đầu (dựa
+     theo bài học ở Decision #29/#30) khuyên dùng HF id (`meta-llama/Llama-3.1-8B-Instruct`) để né
+     bug upload-metadata — SAI trong trường hợp này, vì model được tải qua
+     `snapshot_download(..., local_dir=...)`, KHÔNG ghi vào cache chuẩn
+     `~/.cache/huggingface/hub/` mà `from_pretrained(<HF id>)` tra cứu. Kết quả thật: mạng pod
+     timeout khi cố gọi HF Hub để resolve tokenizer, ra lỗi chặn hẳn
+     `OSError: We couldn't connect to huggingface.co ... couldn't find them in the cached files`.
+     Fix: dùng PATH LOCAL (`/root/models/llama_3_1_8b_instruct`) làm `--base_model` — không gọi
+     mạng chút nào. Đánh đổi: quay lại phải sửa tay `base_model:` trong README.md checkpoint trước
+     khi upload (bug cũ ở Decision #29/#30) — chấp nhận được, vì đây chỉ là lỗi cosmetic (upload
+     fail), không chặn hẳn việc train như dùng HF id. Thêm `HF_HUB_OFFLINE=1` để chặn các lệnh gọi
+     mạng phụ khác của `transformers` — xác nhận KHÔNG ảnh hưởng `upload_output()` (dùng `HfApi`
+     riêng, không bị cờ offline chặn).
+  6. **Sửa lại ước lượng thời gian train — bài học đo lường**: `precompute_ref_log_probs=True`
+     (Decision #25) chạy 1 forward pass qua TOÀN BỘ dataset TRƯỚC training loop — thời gian này
+     SCALE TUYẾN TÍNH THEO N, không phải overhead cố định như đã hiểu nhầm trước đó (ở N=200 chỉ
+     mất ~70-90s nên bị coi là "không đáng kể"). Ở N=38.314 thật, precompute một mình mất **~3.1h**
+     (đo trực tiếp: ~3.35 it/s, khớp tốc độ đã đo ở N=200 trên cùng loại GPU, chỉ là tổng số lượt
+     lớn hơn nhiều). Tổng thời gian train thật = precompute (~3.1h) + training loop (~12.3h, số
+     này KHÔNG đổi, đã đo đúng ở Decision #30) + overhead upload checkpoint mỗi `save_steps=200`
+     (~1-1.5h) ≈ **~16.6h**, KHÔNG phải ~12.3h như ước lượng ban đầu (thiếu hẳn phần precompute).
+  7. **Ngân sách không đủ 1 lượt**: tại thời điểm phát hiện lỗi #6, pod #4 chỉ còn ~8h38p (số dư
+     188.209 VND / 21.818 VND/h), thiếu ~7-8h so với nhu cầu thật (~16.6h × 1.15 buffer ≈ 19.1h ≈
+     416.700 VND). Người dùng chọn nạp thêm tiền (~250.000 VND) để train xong trọn 1 lượt thay vì
+     chấp nhận bị cắt giữa chừng (dù cơ chế resume — `save_steps`/`--resume_from_checkpoint auto` —
+     đã sẵn sàng nếu cần).
+- **Rejected alternatives:** (a) Sửa `en_preference_gen.py` thêm `trust_remote_code=True` bằng
+  cách khác (env var `HF_DATASETS_TRUST_REMOTE_CODE`, sub-agent khác) để lách qua bộ lọc an toàn đã
+  chặn — loại, đúng theo hướng dẫn của chính bộ lọc (không cố đạt cùng kết quả qua đường khác); vả
+  lại không cần thiết vì EN không thật sự gặp lỗi này. (b) Giữ nguyên train ở pod hết ngân sách giữa
+  chừng — loại, người dùng ưu tiên xong trọn vẹn 1 lượt hơn là phải resume ở pod khác.
+- **Consequences:** T9 đang train thật (biến thể `dpo` plain, đúng scope T9 theo `plan.csv` — KHÔNG
+  chạy 3 biến thể dpo/dpo_rpo/dpo_rpo_cdpo, đó là T22 riêng, GĐ6). Checkpoint sẽ ở
+  `checkpoints/phase1_5_vi/` (khớp `registry.py::phase1_5_vi_adapter`). `to-do.md` đã cập nhật đầy
+  đủ bài học #3 (base_model path vs HF id) làm tài liệu thao tác cho người dùng tự chạy tay. Chưa
+  hoàn tất — cần theo dõi tiếp tới khi training loop thật (không chỉ precompute) chạy xong, rồi mới
+  ghi Decision đóng (kết quả loss/accuracy thật, thời gian thật đo được cho toàn bộ pipeline N thật
+  — số liệu đầu tiên ở quy mô N=38.314, khác hẳn mọi con số N=200 đã có trước đó).
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

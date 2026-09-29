@@ -23,6 +23,7 @@ to pick up training exactly where it stopped.
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 from vi_secalign.hf_sync import upload_output
 from vi_secalign.training.dpo_config import DPOVariant, build_dpo_config, build_lora_config
@@ -93,7 +94,15 @@ def train(
         variant, output_dir=output_dir, learning_rate=learning_rate, max_length=max_length,
     )
 
-    callbacks = [_make_upload_on_save_callback(f"train_dpo/{variant}")] if upload_checkpoints else []
+    # 2026-09-29: dest_subdir includes output_dir's basename, not just `variant` -- bài học thật
+    # (record.md Decision #32): mọi run cùng variant="dpo" (mọi smoke-test N=200 VÀ T9 N thật)
+    # trước đây đều upload vào ĐÚNG 1 path HF `pod_outputs/train_dpo/dpo/checkpoint-<step>/` --
+    # không đụng độ với các smoke-test cũ (chỉ tới step 21) chỉ vì tình cờ T9 dùng step lớn hơn
+    # nhiều (200+), nhưng T9b (cũng variant="dpo", output_dir khác) sẽ CÓ NGUY CƠ ĐÈ LÊN checkpoint
+    # thật của T9 nếu 2 run có step trùng nhau. Dùng basename(output_dir) để mỗi run có path HF
+    # riêng, không phụ thuộc việc "may mắn không trùng step" nữa.
+    run_label = Path(output_dir).name
+    callbacks = [_make_upload_on_save_callback(f"train_dpo/{variant}/{run_label}")] if upload_checkpoints else []
     trainer = DPOTrainer(
         model=model,
         args=dpo_config,
@@ -111,7 +120,7 @@ def train(
     trainer.train(resume_from_checkpoint=resume)
     trainer.save_model(output_dir)
     if upload_checkpoints:
-        upload_output(output_dir, f"train_dpo/{variant}_final")
+        upload_output(output_dir, f"train_dpo/{variant}/{run_label}_final")
     return output_dir
 
 

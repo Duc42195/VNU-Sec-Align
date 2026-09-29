@@ -1288,6 +1288,38 @@
 
 ---
 
+### #32 — Bug thật: `train_dpo.py` upload checkpoint theo `dest_subdir` chỉ dựa vào `variant`, nguy cơ T9b đè lên checkpoint thật của T9
+
+- **Context:** Trong lúc đồng bộ data thật từ HF về local (`data/pod_synced/`), phát hiện
+  `pod_outputs/train_dpo/dpo/checkpoint-21/` trên HF là **rác từ 1 trong các smoke-test N=200 cũ**
+  (xác nhận qua `trainer_state.json`: `global_step=21, epoch=3.0, loss=0.0662` — khớp các lần test
+  trước, không phải T9 thật đang chạy ở step ~230+).
+- **Decision:**
+  1. Root cause: `_make_upload_on_save_callback(f"train_dpo/{variant}")` và
+     `upload_output(output_dir, f"train_dpo/{variant}_final")` (`train_dpo.py`) chỉ dùng `variant`
+     (`"dpo"`/`"dpo_rpo"`/`"dpo_rpo_cdpo"`) để đặt tên thư mục đích trên HF — KHÔNG phân biệt theo
+     `output_dir`/run cụ thể. Mọi lần chạy cùng `variant="dpo"` (mọi smoke-test N=200 VÀ T9 N thật)
+     đều ghi vào ĐÚNG 1 namespace `pod_outputs/train_dpo/dpo/checkpoint-<step>/`.
+  2. Chưa có đụng độ THẬT với T9 hiện tại chỉ vì smoke-test cũ dừng ở step 21, còn T9 dùng step
+     200+ — **may mắn, không phải do thiết kế an toàn**. T9b (Decision #20, cũng `variant="dpo"`,
+     `output_dir` khác) có nguy cơ THẬT SỰ đè lên checkpoint T9 nếu 2 run có step trùng nhau khi
+     chạy sau này.
+  3. Fix: `dest_subdir` giờ gồm cả `Path(output_dir).name` —
+     `f"train_dpo/{variant}/{run_label}"` (và `..._final`) — mỗi run có namespace HF riêng, không
+     phụ thuộc việc "tình cờ không trùng step" nữa. Đã verify `python3 -m py_compile` pass.
+  4. **Không ảnh hưởng T9 đang chạy trên pod** — tiến trình đó đã load code cũ vào bộ nhớ từ lúc
+     khởi động, `git pull` trên pod không tự áp dụng cho tiến trình đang chạy. Checkpoint T9 thật
+     (step 200, 400, ...) vẫn tiếp tục ghi đúng vào `pod_outputs/train_dpo/dpo/checkpoint-<step>/`
+     như cũ cho tới khi train xong — không cần restart, không mất gì.
+- **Rejected alternatives:** Không có — đây là fix code đơn thuần, không có phương án khác được cân
+  nhắc và loại.
+- **Consequences:** `train_dpo.py` đã sửa (commit sau Decision #31). Khi chạy T9b (chưa chạy),
+  checkpoint sẽ tự động nằm ở `pod_outputs/train_dpo/dpo/checkpoint_phase1.5_incremental/` (hoặc
+  tên `output_dir` tương ứng), tách biệt hoàn toàn với T9. Rác `checkpoint-21` cũ trên HF không cần
+  dọn ngay (không tốn chi phí đáng kể, không gây nhầm lẫn nếu biết rõ nguồn gốc như ghi ở đây).
+
+---
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

@@ -1360,13 +1360,21 @@
   ETA rõ ràng, rủi ro pod hết hạn thuê (24h) hoặc bị xoá trước khi mạng về; SFTP cứu ngay an toàn
   hơn nhiều. (b) Dùng `scp`/`rsync` qua subprocess thay vì `paramiko` SFTP thuần Python — không cần
   thiết, `paramiko` đã có sẵn trong scratchpad venv từ trước, không phải cài thêm gì.
-- **Consequences:** Checkpoint T9 thật (LoRA adapter, N=38.314, 3 epoch, `max_length=2048`) đã an
-  toàn trên máy local (`checkpoints/phase1_5_vi/`, đang verify toàn vẹn). **Chưa upload lên HF** —
-  cần làm khi mạng pod phục hồi HOẶC upload thẳng từ máy local (đã có file, không cần qua pod nữa).
+- **Consequences (ĐÃ ĐÓNG, 2026-09-30):** Mạng pod phục hồi hoàn toàn trước khi pod bị xoá — upload
+  lại thành công từ pod (30.5MB/s, ~5.69GB gồm bản cuối + cả 3 checkpoint trung gian 3200/3400/3594)
+  sau khi sửa nốt bug README `base_model` (Decision #29/#30, path local → HF id). Xác nhận HF có đủ
+  file: `pod_outputs/train_dpo/dpo/phase1_5_vi_final/phase1_5_vi/`. Đã tải lại về máy local từ HF
+  (không qua pod nữa, pod đã xoá), xác minh **`sha256sum` khớp chính xác** với checksum lấy trên pod
+  lúc còn sống (`2dabf7e7...b717d192`) + tự viết script Python thuần đọc header `.safetensors` xác
+  nhận 320 tensor, kích thước khớp chính xác offset khai báo — checkpoint T9 thật **an toàn tuyệt
+  đối, đã verify 2 lớp (checksum + cấu trúc nội bộ định dạng)**, không còn phụ thuộc pod nào nữa.
   `hf_sync.py` đã cứng cáp hơn cho các lần chạy sau (T9b, và mọi script khác dùng chung module này).
   Bài học tổng quát quan trọng nhất: **không bao giờ set `HF_HUB_OFFLINE` cho một tiến trình vừa
   cần load model vừa cần upload output trong cùng lần chạy** — 2 nhu cầu mạng đối lập nhau, cờ
-  offline chỉ nên dùng cho tiến trình THUẦN đọc, không có bước ghi/upload nào sau đó.
+  offline chỉ nên dùng cho tiến trình THUẦN đọc, không có bước ghi/upload nào sau đó. Bài học vận
+  hành thứ 2: SSH/SFTP tới pod có thể vẫn sống dù mạng RA NGOÀI của pod chết hoàn toàn — luôn thử
+  kéo dữ liệu qua kênh quản lý (SSH) trước khi coi là mất, đừng chỉ dựa vào chính pod tự upload.
+  **T9 chính thức HOÀN TẤT** — checkpoint sẵn sàng cho T10 (đánh giá held-out).
 
 ---
 

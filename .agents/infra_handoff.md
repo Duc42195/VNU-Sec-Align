@@ -159,41 +159,33 @@ gì thêm cho các bước sau:
    `pod_outputs/train_dpo/dpo_final/test_dpo_vn200/`. **Lưu ý: run này dùng `--max_length 1536`
    (sai lệch so với 2048 gốc) — không dùng lại config này cho N thật, xem mục "Pod tiếp theo" ở trên.**
 
-## Pod #4 (n1.ckey.vn:1211, RTX 5090 desktop 32GB thật) — ĐANG DÙNG (2026-09-29)
+## Pod #4 (n1.ckey.vn:1211, RTX 5090 desktop 32GB thật) — ĐÃ XOÁ, T9 HOÀN TẤT (2026-09-30)
 
-Thuê sau khi pod #3 (Decision #30) hết ngân sách giữa chừng. Xác nhận `nvidia-smi`: RTX 5090
-desktop thật, 32GB VRAM, compute cap 12.0, 32 vCPU, 62GB RAM, 848GB disk, giá **21.818 VND/h**.
-KHÔNG chạy trên WSL (không gặp lại lỗi `-lcuda` của pod #3). Chi tiết đầy đủ (bug tìm được, bài
-học đo lường) ở `record.md` Decision #31 — không lặp lại ở đây.
+Thuê sau khi pod #3 (Decision #30) hết ngân sách giữa chừng. RTX 5090 desktop thật, 32GB VRAM,
+compute cap 12.0, 32 vCPU, 62GB RAM, 848GB disk, giá 21.818 VND/h. Người dùng đã xoá pod này sau
+khi T9 train xong VÀ checkpoint đã upload an toàn lên HF — không còn hiệu lực, đừng SSH lại.
 
-**Trạng thái T9 hiện tại (cập nhật lần cuối 2026-09-29)**:
-- ✅ VN: 19.157/19.157 mẫu, xong hoàn toàn → `data/preference/vn_preference_n19000.jsonl` (tên
-  file giữ nguyên dù đã top-up từ 19.000, tránh mất resume). Upload HF:
-  `pod_outputs/vi_preference_gen/vn_preference_n19000.jsonl`.
-- ✅ EN: 19.157/19.157 mẫu (= 100% pool hợp lệ thật của `yahma/alpaca-cleaned`), xong hoàn toàn →
-  `data/preference/en_preference_n19157.jsonl`. Upload HF:
-  `pod_outputs/en_preference_gen/en_preference_n19157.jsonl`.
-- ✅ Đã gộp: `data/preference/t9_joint_en_vn.jsonl` (38.314 mẫu = 19.157×2).
-- 🔄 **`train_dpo.py` đang chạy** (biến thể `dpo` plain, `--max_length 2048`,
-  `--base_model /root/models/llama_3_1_8b_instruct` — PHẢI dùng path local, không phải HF id, xem
-  bài học #5 ở Decision #31). Output: `checkpoints/phase1_5_vi/`. Ước lượng tổng thời gian:
-  precompute ref log probs (~3.1h, scale tuyến tính theo N — KHÔNG phải overhead cố định như tưởng
-  ở N=200) + training loop (~12.3h) + upload checkpoint overhead (~1-1.5h) ≈ **~16.6h thật**.
-- Xem `to-do.md` ở gốc repo để có lệnh đầy đủ + mục "Lỗi đã biết" nếu cần resume/debug tiếp.
+**T9 — HOÀN TẤT HOÀN TOÀN (xem `record.md` Decision #31/#33 để có chi tiết đầy đủ)**:
+- ✅ VN + EN: 19.157/19.157 mẫu mỗi bên (EN = 100% pool hợp lệ thật), đã gộp thành
+  `t9_joint_en_vn.jsonl` (38.314 mẫu) — data đã sync về `data/pod_synced/` local.
+- ✅ `train_dpo.py` chạy xong: `train_runtime=43164.9s` (~12h), `train_loss` TB=0.01711,
+  `rewards/accuracies` cuối=1.0. Tổng thời gian thật (gồm precompute) ≈ 15h25m.
+- ✅ Checkpoint (bản cuối + checkpoint-3200/3400/3594) đã upload HF sau sự cố mất mạng pod
+  (Decision #33 — suýt mất, cứu bằng SFTP trực tiếp + upload lại khi mạng phục hồi):
+  `pod_outputs/train_dpo/dpo/phase1_5_vi_final/phase1_5_vi/`.
+- ✅ Đã tải lại về local (`checkpoints/phase1_5_vi/`) sau khi pod bị xoá, verify
+  `sha256sum` khớp chính xác + header `.safetensors` hợp lệ (320 tensor, không hỏng).
 
-## Việc còn lại theo đúng thứ tự (sau khi T9 train xong)
+## Việc còn lại theo đúng thứ tự (T9 đã xong, bắt đầu từ đây)
 
-1. Kiểm tra log cuối `train_t9.log`: xác nhận loss/`rewards/accuracies` giảm/tăng hợp lý (tham
-   khảo N=200: loss 0.417→0.063, accuracies 85.8%→98.6% — N=38.314 nên tốt hơn hoặc tương đương,
-   không nhất thiết y hệt).
-2. Ghi Decision đóng vào `record.md` (kết quả thật N=38.314 — số liệu đầu tiên ở quy mô này, thay
-   thế mọi ước lượng ngoại suy từ N=200 trước đó).
-3. **T9b (domain-incremental)** — chạy song song/sau đó, dùng RIÊNG `vn_preference_n19000.jsonl`
+1. **T9b (domain-incremental)** — cần pod GPU mới, dùng RIÊNG `vn_preference_n19000.jsonl`
    (19.157 mẫu, không gộp EN), continue-train từ `meta_secalign_8b` — xem Decision #20. Chưa chạy.
-4. **T10/T10b**: đánh giá VN_ASR (và EN_ASR cho T10b) trên **held-out**, so với baseline GĐ2 — đây
-   mới là bằng chứng thật trả lời RQ2, không phải loss curve của training. Chưa chạy.
-5. Cập nhật `plan.csv` T9/T9b Status — theo `.agents/CLAUDE.md` mục 2, chỉ người dùng hoặc hook
-   DoD được set `Done`, agent chỉ ghi chú kết quả vào cột Ghi chú.
+2. **T10/T10b**: đánh giá VN_ASR (và EN_ASR cho T10b) trên **held-out**, so với baseline GĐ2 — đây
+   mới là bằng chứng thật trả lời RQ2, không phải loss curve của training. Chưa chạy, cần checkpoint
+   T9 (đã có, `checkpoints/phase1_5_vi/`) + GPU để chạy inference/eval.
+3. Cập nhật `plan.csv` T9/T9b Status — theo `.agents/CLAUDE.md` mục 2, chỉ người dùng hoặc hook
+   DoD được set `Done`, agent chỉ ghi chú kết quả vào cột Ghi chú (đã làm).
+4. `to-do.md` ở gốc repo có thể xoá — mục đích đã hoàn thành (T9 xong, Decision đã ghi).
 
 ## Quyết định liên quan (đã ghi ở record.md, không lặp lại chi tiết ở đây)
 

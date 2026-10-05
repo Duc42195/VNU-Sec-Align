@@ -8,7 +8,30 @@ the script passed to `-f`, so a sibling file on this machine doesn't exist on th
 
 from __future__ import annotations
 
+import os
 import sys
+
+# colab exec -f CANNOT forward extra CLI args to the script it runs (typer: unexpected
+# extra argument) -- so the override values below are injected via --env KEY=VALUE:
+#   colab exec -s t9b_smoke --env T9B_CACHE_DIR=... --env T9B_OUTPUT_DIR=... -f <this file>
+# With no env vars set, the yaml keeps null placeholders (Phase 2 on a pod: fill them in
+# at train time via tune-run overrides instead).
+_ENV_MAP = [
+    ("output_dir: null", "T9B_OUTPUT_DIR", "output_dir"),
+    ("cache_dir: null", "T9B_CACHE_DIR", "cache_dir"),
+    ("manual_adapter_checkpoint: null", "T9B_MANUAL_ADAPTER_CHECKPOINT", "manual_adapter_checkpoint"),
+    ("data_files: null  # override: data/pod_synced/vi_preference_gen/vn_preference_n19000.jsonl",
+     "T9B_DATA_FILES", "data_files"),
+]
+
+
+def _render() -> str:
+    out = _T9B_YAML
+    for placeholder, env_key, yaml_key in _ENV_MAP:
+        value = os.environ.get(env_key)
+        if value:
+            out = out.replace(placeholder, f"{yaml_key}: {value}", 1)
+    return out
 
 _T9B_YAML = '''\
 # T9b (domain-incremental, VN-only) -- torchtune single-device LoRA DPO config.
@@ -130,7 +153,10 @@ enable_activation_offloading: False
 '''
 
 if __name__ == "__main__":
-    target = sys.argv[1] if len(sys.argv) > 1 else "/content/t9b.yaml"
+    # NOTE: inside the colab kernel, sys.argv contains the kernel's own launch args
+    # (e.g. ['--kernel-file', '/root/...json']) -- NEVER parse it here. The target
+    # path comes from T9B_YAML_PATH (env) and defaults to /content/t9b.yaml.
+    target = os.environ.get("T9B_YAML_PATH", "/content/t9b.yaml")
     with open(target, "w") as f:
-        f.write(_T9B_YAML)
+        f.write(_render())
     print(f"[write_t9b_config] Wrote {target}")

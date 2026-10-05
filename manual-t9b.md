@@ -103,22 +103,25 @@ print(len(data), "-> smoke subset 40 ghi ra /content/vn_preference_smoke40.json"
 ' | colab exec -s t9b_smoke
 ```
 
-### 8. Ghi yaml lên session, rồi chạy recipe đã patch — cả 2 qua `colab exec -f` (mỗi lệnh gửi đúng 1 file)
+### 8. Ghi yaml lên session, rồi chạy recipe đã patch — cả 2 qua `colab exec -f`
+
+**Lưu ý CLI:** `colab exec` (typer) KHÔNG nhận thêm đối số cho script `-f` — `--` và mọi arg
+sau nó đều bị báo `Got unexpected extra argument(s)`. Vì vậy giá trị override được truyền qua
+`--env KEY=VALUE` (write_t9b_config.py đọc các biến này), còn recipe được chạy qua 1 file bundle
+đã nhúng sẵn argv (make_t9b_recipe_bundle.py).
 
 ```bash
-# (1) Ghi yaml ra /content/t9b.yaml (write_t9b_config.py nhúng sẵn nội dung yaml, cùng pattern
-#     apply_torchtune_preference_patch.py đã dùng cho _preference.py)
-colab exec -s t9b_smoke -f tools/pod_setup/write_t9b_config.py -- /content/t9b.yaml
+# (1) Ghi yaml ra /content/t9b.yaml -- giá trị override truyền qua --env, KHÔNG qua arg sau -f
+colab exec -s t9b_smoke \
+  --env T9B_CACHE_DIR=/content/llama3.1_8b_instruct \
+  --env T9B_MANUAL_ADAPTER_CHECKPOINT=<path in từ bước 5> \
+  --env T9B_OUTPUT_DIR=/content/t9b_smoke_out \
+  --env T9B_DATA_FILES=/content/vn_preference_smoke40.json \
+  -f tools/pod_setup/write_t9b_config.py
 
-# (2) Chạy recipe đã patch (tự chứa toàn bộ logic, chạy trực tiếp bằng python -- không phụ thuộc
-#     `tune run`'s dotpath resolution, né rủi ro import module trên máy lạ)
-colab exec -s t9b_smoke -f external/meta_secalign/helpers/lora_dpo_single_device_t9b.py -- \
-  --config /content/t9b.yaml \
-  cache_dir=/content/llama3.1_8b_instruct \
-  manual_adapter_checkpoint=<path in từ bước 5> \
-  output_dir=/content/t9b_smoke_out \
-  dataset.data_files=/content/vn_preference_smoke40.json \
-  epochs=1 max_steps_per_epoch=3
+# (2) Sinh file bundle (nhúng nguyên văn source recipe đã patch + hardcode sys.argv), rồi đẩy lên
+python3 tools/pod_setup/make_t9b_recipe_bundle.py --smoke   # ghi /tmp/opencode/t9b_recipe_bundle.py
+colab exec -s t9b_smoke -f /tmp/opencode/t9b_recipe_bundle.py
 ```
 
 Không dùng `colab upload` cho yaml (lỗi 500 với file nhỏ — xem `T10_MANUAL.md` mục 4). Nếu

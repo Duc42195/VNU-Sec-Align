@@ -47,6 +47,17 @@ file's content (a patch to apply, a data file), embed that content literally ins
 passed to `-f` (e.g. `tools/pod_setup/apply_torchtune_preference_patch.py` embeds the full patched
 file as a string constant) rather than writing a script that tries to read a sibling path.
 
+## 2026-10-05 — `colab exec` CLI cannot pass extra args to the `-f` script; use `--env` or bundle
+`colab exec -f script.py -- --config x=y` fails with typer's "Got unexpected extra
+argument(s)" -- the only flags are `-s/--session`, `-f/--file`, `--env KEY=VALUE`, etc.
+When a remote script needs override values or sys.argv from the recipe CLI, do one of:
+(a) generate a bundle file locally (header that sets `sys.argv` + stripped-`__main__`
+recipe source + explicit `sys.exit(recipe_main())`; see
+`tools/pod_setup/make_t9b_recipe_bundle.py`) and `colab exec -f` that bundle; (b) pass values
+via `--env` and have the remote script read `os.environ`. `--env` also works for the inline
+`echo '...' | colab exec` form. Do this: never put `--` or recipe-style `key=value` overrides
+after the `-f` argument.
+
 ## Standup checks
 Read by `/plan-check` when it is installed. Add 3 to 6 checks that fit this project as bullet lines starting with `- ` below this paragraph. One check per line: a read-only command to run or a file to read, and what counts as a failure. `/plan-check` runs them and prints only the ones that fail.
 Examples (not active, copy the ones you want): the gate passes on the default branch; a task is `done` but its `review` is still `pending`; a task is in progress while a task in its `depends` is not done; the tracker and `plan.csv` disagree (only with an external tracker); every number in the report cites a run-id that is a chosen result in `decisions-log.md` (research projects).

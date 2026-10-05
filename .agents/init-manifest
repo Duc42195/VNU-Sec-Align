@@ -1,0 +1,30 @@
+# agent-gov manifest, written by scripts/gov.sh. Do not edit by hand.
+version 0.9.0
+var PROJECT_NAME=VNU-SecAlign / Vi-InjectEval
+var WHAT=Cross-lingual (Vietnamese) generalization study of Meta's SecAlign++ prompt-injection defense, plus Vi-InjectEval, an independent public Vietnamese prompt-injection benchmark
+var GOAL=Publish Vi-InjectEval and the cross-lingual SecAlign++ paper/thesis, answering RQ1-4 (zero-shot generalization, VN preference data, 1-GPU hyperparameter search, 10 new attack vectors)
+var STACK=Python (torch, transformers, trl, peft, vllm) - ML research
+var IS_RESEARCH=yes
+var TASK_KEY=T
+var GIT_HOST=GitHub
+var DEFAULT_BRANCH=main
+var EXTERNAL_TRACKER=none
+var GATE_CMD=
+var PY=python3
+var PLAN=bash .agents/tools/plan.sh
+var ROLE_NAME=Duc42195
+var ROLE=maintainer
+var ROLE_OWNS=everything
+var AGENTS=claude
+var PLAN_CHECK=no
+file	539756227d2387811748e8e0e8d4574d9134d9bdbce2447b1ccd0a408e39558f	AGENTS.md
+file	87931c1d2accf7c7419d624922296b45bf288a698736ee8194fefd3591106385	.agents/roles.md
+file	8e915abcfd27c415cb46ca70f2f0ca6df932063e0a5ccbf7b63afabdf16431e2	.agents/tools/plan.cmd
+file	2c18abbb6f843a25477b3a753bcc737ebf3a29e3c0d8884a37f67d5f853713aa	.agents/tools/plan.ps1
+file	1903eae6988527d09f2f1d249111a16855fbbba80a0751748c9bccb4bb0b8bd0	.agents/tools/plan.sh
+file	587a13c8ea9110e482961c9d13736766d051108790aed0371b2b32edf96feb77	.agents/wiki/decisions-log.md
+file	7c857f441eacd9698a20e1c6262d2f75398293263b35db2d991f05df89d8bb0b	.agents/wiki/learnings.md
+file	a89e2b4bbd78e202d00132d0cc13373825a98f8aa0e3a3285ae3e164e52a15a9	.agents/wiki/open-questions.md
+file	5368f4ef477d4724ec03ae3c364ec2809eeb240f3ee0858cebc48d1426e1d5b7	.agents/wiki/working-process.md
+file	b83ec15cdc95ba3a5a4d5b695631d227d61b5d05de1e31e4e6c1f417dfefafc5	.claude/commands/done.md
+file	336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49	CLAUDE.md

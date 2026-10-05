@@ -1466,6 +1466,169 @@
   đối chiếu chiều dấu của `vn_minus_en_asr_matched` ở baseline với phát biểu RQ1 gốc — có thể là
   phát hiện thật cần điều chỉnh cách trình bày RQ1, không phải lỗi đo lường (chưa xác định).
 
+### #36 — T9b/torchtune: `checkpointer.adapter_checkpoint` KHÔNG dùng được như plan ban đầu giả định; đổi sang merge adapter Meta vào base trước khi train LoRA mới
+
+- **Context:** Chuẩn bị code cho T9b (domain-incremental, torchtune, xem plan
+  `radiant-sprouting-firefly.md`). Plan ban đầu (viết ở phiên trước, dựa trên đọc source qua `git
+  clone`/`gh api`) giả định: nạp adapter `facebook/Meta-SecAlign-8B` làm điểm khởi đầu LoRA qua
+  `checkpointer.adapter_checkpoint` trong yaml torchtune, không cần merge. Khi viết code thật (phiên
+  này), verify lại trực tiếp bằng cách tải đúng tag `v0.6.0` của `recipes/lora_dpo_single_device.py`
+  và `torchtune/training/checkpointing/_checkpointer.py` từ GitHub (raw, không cần auth) — phát hiện
+  giả định đó SAI.
+- **Decision:**
+  1. **Sự thật verify được**: `FullModelHFCheckpointer.load_checkpoint()` nạp `adapter_checkpoint`
+     vào `checkpoint_dict[training.ADAPTER_KEY]` KHÔNG ĐIỀU KIỆN (không phụ thuộc
+     `resume_from_checkpoint`) — nhưng recipe `lora_dpo_single_device.py::setup()` chỉ truyền giá trị
+     đó vào `_setup_model(lora_weights_state_dict=...)` **khi `self._resume_from_checkpoint` là
+     True** (`checkpoint_dict[training.ADAPTER_KEY] if self._resume_from_checkpoint else None`).
+     Nếu để `resume_from_checkpoint: False` (trường hợp "chỉ muốn nạp adapter làm điểm khởi đầu, không
+     resume training") — adapter bị bỏ qua ÂM THẦM, model train với LoRA random init như chưa từng
+     khai báo `adapter_checkpoint`, không có lỗi/warning nào.
+  2. Mà `resume_from_checkpoint: True` lại kéo theo `should_load_recipe_state=True` ở checkpointer,
+     cần file `recipe_checkpoint` chứa `EPOCHS_KEY`/`OPT_KEY`/seed... — thứ mà adapter PEFT chuẩn của
+     Meta (`adapter_model.safetensors` + `adapter_config.json`) không có và không thể tự tạo hợp lệ.
+     → Không có cách dùng `adapter_checkpoint` đúng ý định "load adapter làm init, train như mới"
+     trong torchtune 0.6.0 bằng cấu hình yaml thuần, không sửa code recipe.
+  3. **Quyết định**: thay vì vá/fork recipe gốc (torchtune đã ngừng phát triển, vá sẽ phải tự
+     bảo trì vĩnh viễn không có upstream hỗ trợ) — **merge adapter Meta vào base model trước**
+     (`tools/pod_setup/merge_meta_adapter.py`: `peft.PeftModel.from_pretrained(base,
+     "facebook/Meta-SecAlign-8B").merge_and_unload()`, lưu full-weight 1 file `.safetensors`), rồi
+     train 1 LoRA MỚI (rank 64, random init) trên bản merge — dùng đúng đường single-device LoRA
+     DPO tiêu chuẩn (không cần `adapter_checkpoint`/`resume_from_checkpoint` nữa), đường này đã được
+     torchtune test kỹ nhất vì là usecase phổ biến nhất của recipe.
+  4. Tác dụng phụ có lợi: loại bỏ hẳn mục "CHƯA verify được" trong plan gốc (đọc
+     `adapter_config.json` thật của Meta để khớp rank/alpha/dropout cho `lora_weights_state_dict`) —
+     vì giờ không nạp LoRA cũ vào module LoRA mới nữa, `peft` tự đọc đúng `adapter_config.json` khi
+     merge bất kể giá trị thật là gì, không cần ta biết/khớp số trước.
+  5. **Dataset schema — xác nhận khớp, không cần script chuyển đổi**: diff trực tiếp
+     `external/meta_secalign/helpers/_preference.py` với `torchtune/datasets/_preference.py` bản
+     gốc v0.6.0 — khác đúng 1 chỗ: `_prepare_sample` đọc `sample["prompt"]/["chosen"]/["rejected"]`
+     dạng string thuần qua `tokenizer.encode()` (bản gốc dùng `message_transform` + list message).
+     Kiểm tra `data/pod_synced/vi_preference_gen/vn_preference_n19000.jsonl` (thật ra là JSON array,
+     không phải JSONL dù đuôi file) — đúng 3 field `prompt`/`chosen`/`rejected` dạng string thuần,
+     `prompt` đã có sẵn chat template Llama-3 (`<|begin_of_text|>...<|start_header_id|>assistant...`),
+     `chosen`/`rejected` là phần completion thuần kết thúc `<|eot_id|>` — khớp 100% schema bản patch
+     của Meta. Không cần viết hàm chuyển đổi field nào.
+  6. **Việc patch file**: vì đây là override cần thiết (không phải optional), viết
+     `tools/pod_setup/apply_torchtune_preference_patch.py` nhúng nguyên văn nội dung bản patch của
+     Meta làm string trong code (không `cp` từ file khác) — vì khi chạy trên Colab qua `colab exec
+     -f`, chỉ nội dung CHÍNH file được truyền (`-f`) mới tới được máy remote (bài học từ T10 —
+     "Transparent Code Execution" không kéo theo file phụ nào khác).
+- **Rejected alternatives:** (a) Tiếp tục dùng `adapter_checkpoint` + tự tạo file `recipe_checkpoint`
+  giả (điền `EPOCHS_KEY=0`, `OPT_KEY={}` tuỳ ý) để lách qua điều kiện `resume_from_checkpoint` —
+  loại, vì đang đoán cấu trúc file recipe-state nội bộ của torchtune không có trong docs công khai,
+  rủi ro silent-corrupt cao hơn lợi ích, trong khi merge là đường đã test kỹ, không cần đoán gì.
+  (b) Fork/sửa trực tiếp `lora_dpo_single_device.py` (đổi 1 dòng điều kiện) — loại, vì torchtune đã
+  "wound down", tự vá sẽ phải tự mang theo mãi qua mọi lần cập nhật version, trong khi merge không
+  cần sửa code thư viện nào cả.
+- **Consequences:** Cập nhật `manual-t9b.md` (mới) theo đúng quy trình merge-trước-train, không theo
+  draft yaml ban đầu của plan. File dự kiến tạo ở plan gốc
+  (`llama3.1_8B_lora_t9b_single_device.yaml`) đã viết lại đúng theo quyết định này (không có
+  `checkpointer.adapter_checkpoint`, `cache_dir` trỏ vào output của `merge_meta_adapter.py`). Phase 0
+  của plan (verify `adapter_config.json` thật — cần HF_TOKEN, chưa có sẵn trong môi trường agent)
+  không còn cần làm nữa, xem điểm 4.
+- **Bổ sung cùng ngày (2026-10-05) — trả lời câu hỏi người dùng "vậy có nên continue-train ĐÚNG
+  adapter đó (không merge) để thực sự tăng miền":** đào thêm, phát hiện lý do THỨ HAI (độc lập với
+  bug gating ở trên) khiến phương án "nạp thẳng adapter Meta vào LoRA torchtune, tiếp tục train
+  đúng adapter đó" không đơn giản như "sửa 1 dòng điều kiện":
+  `FullModelHFCheckpointer.load_checkpoint()` nạp `adapter_checkpoint` qua `safe_torch_load()` rồi
+  dùng NGUYÊN, KHÔNG qua bước convert key-name nào (khác hẳn weight base model, luôn qua
+  `convert_weights.hf_to_tune()`). Code chính torchtune tự ghi chú thật
+  (`_checkpointer.py:806-807`): `"convert_weights.tune_to_peft_adapter_weights, we do NOT have a
+  fn convert_weights.peft_to_tune"` — tức slot `adapter_checkpoint` chỉ dành cho RESUME 1 checkpoint
+  torchtune tự sinh ra trước đó (key-name gốc `lora_a/lora_b` kiểu torchtune), không phải để nạp
+  adapter PEFT ngoài (Meta) vào — PEFT dùng key-name khác (`lora_A/lora_B`, phân biệt hoa/thường) VÀ
+  còn có 1 bước permute chiều head cho `q_proj`/`k_proj` (RoPE layout khác nhau giữa HF và
+  torchtune, xem `convert_weights.py:198-203`) mà torchtune chỉ viết hàm 1 chiều
+  (tune→peft, để EXPORT), chưa có hàm ngược (peft→tune, để IMPORT). Muốn làm đúng "continue-train
+  ĐÚNG adapter Meta" sẽ phải tự viết hàm convert ngược này (đảo tên key + đảo permute) — rủi ro
+  thật: nếu đảo permute sai chiều, model vẫn chạy được, loss vẫn ra số hợp lý, nhưng attention
+  projection bị xáo trộn âm thầm — loại lỗi khó phát hiện nhất (không crash, không NaN, chỉ ra số
+  liệu tệ một cách khó lý giải). **Quyết định giữ nguyên phương án merge** (không viết hàm convert
+  ngược) vì rủi ro silent-bug của permute tự viết tay cao hơn lợi ích "tăng miền đúng nghĩa đen
+  trên cùng adapter". Khác biệt khoa học thật giữa 2 phương án (cần ghi vào Limitations khi viết
+  draft, không giấu): merge = EN-delta được ĐÓNG BĂNG (bake vào base, không trainable nữa), LoRA
+  VN mới hoàn toàn tự do học trên nền đó -- khác "continue-train" nghĩa đen (1 adapter duy nhất,
+  cùng ma trận rank-64, bị update tiếp bởi gradient VN, có thể tự trôi dạt quên EN). Cả 2 đều là
+  domain-incremental hợp lệ, chỉ khác Ở CHỖ EN-delta có bị "bảo vệ" khỏi bị ghi đè trực tiếp hay
+  không -- nên công bố đúng biến thể nào đã chạy, không gọi chung là "continue-train" mơ hồ.
+- **Ý tưởng người dùng đề xuất thêm, chưa chọn làm ngay:** (a) mỗi ngôn ngữ 1 LoRA độc lập (train
+  trên base THUẦN, không qua adapter Meta) -- là 1 câu hỏi khác hẳn (VN defense có cần điểm khởi
+  đầu EN-defense không, hay tự học được độc lập), không phải domain-incremental theo đúng nghĩa
+  Decision #20 -- có thể thêm làm 1 nhánh ablation rẻ (tái dùng y nguyên pipeline, chỉ đổi cache_dir
+  sang base thuần, không cần merge) nếu còn thời gian/tiền ở GĐ6 (T22), KHÔNG làm ngay bây giờ vì
+  trả lời 1 RQ khác, không phải RQ2. (b) Chạy cả merge-approach VÀ continue-approach để so sánh --
+  từ chối ở bước này vì continue-approach cần code convert ngược chưa viết/chưa test (rủi ro cao,
+  xem trên), tốn thêm 1 vòng GPU-rental để so sánh trước khi biết merge-approach có vấn đề thật hay
+  không -- ưu tiên chạy merge-approach (đã sẵn code) trước, chỉ quay lại làm continue-approach nếu
+  kết quả merge-approach bất thường và cần cô lập nguyên nhân "đóng băng vs tiếp tục" cụ thể.
+
+### #37 — Đổi quyết định #36: người dùng chọn làm continue-train đúng adapter Meta (viết code convert ngược + patch recipe), không dùng merge nữa
+
+- **Context:** Sau khi nghe đầy đủ rủi ro/lợi ích 2 phương án ở Decision #36 (merge = EN-delta
+  đóng băng, an toàn nhưng lệch nghĩa đen "continue-train"; continue-approach = đúng nghĩa đen
+  Decision #20 nhưng cần tự viết hàm convert PEFT→torchtune chưa có sẵn, rủi ro permute sai chiều),
+  người dùng chọn **"fix bug và làm"** — ưu tiên đúng nghĩa khoa học hơn, chấp nhận thêm việc.
+- **Decision:**
+  1. Đào sâu thêm trước khi code (qua 2 agent con + tự verify trực tiếp bằng `curl` tới
+     `raw.githubusercontent.com/pytorch/torchtune/v0.6.0/...`) — phát hiện **lớp chặn thứ 4**, sớm
+     hơn 2 lớp đã biết ở Decision #36: `get_adapter_checkpoint_path()`
+     (`torchtune/training/checkpointing/_utils.py:445`) trả `None` ngay từ đầu nếu
+     `should_load_recipe_state=False` (= `resume_from_checkpoint=False`), **bất kể**
+     `adapter_checkpoint` có set trong yaml hay không — nghĩa là dù có vá đúng 1 dòng ternary trong
+     recipe (phát hiện ban đầu ở #36) cũng KHÔNG đủ, vì checkpoint_dict thậm chí không bao giờ chứa
+     `ADAPTER_KEY` khi `resume_from_checkpoint=False`.
+  2. Vì vậy **không vá `checkpointer.adapter_checkpoint`/`get_adapter_checkpoint_path`** (thiết kế
+     có chủ đích của torchtune cho use-case "resume chính run của mình", không phải bug) — thay vào
+     đó viết `tools/pod_setup/convert_peft_adapter_to_torchtune.py` (hàm `peft_to_tune_adapter_weights`,
+     đảo ngược `tune_to_peft_adapter_weights` thật của torchtune — import lại `_FROM_HF`/
+     `_TO_PEFT_KEYS`/`get_mapped_key` từ `torchtune.models.convert_weights`, không chép tay) và
+     `external/meta_secalign/helpers/lora_dpo_single_device_t9b.py` (vendor + patch ĐÚNG 1 điểm:
+     ngay sau `self._model = self._setup_model(...)` trong `setup()`, nạp
+     `cfg.manual_adapter_checkpoint` (key config MỚI, tự định nghĩa, không đụng
+     `adapter_checkpoint`/`resume_from_checkpoint` của torchtune) trực tiếp vào model qua
+     `load_state_dict(strict=False)`, validate bằng `validate_missing_and_unexpected_for_lora` có
+     sẵn (tái dùng, không viết validator riêng).
+  3. **Cổng chặn chính cho rủi ro permute sai chiều**: `main()` của script convert PHẢI round-trip
+     kết quả qua lại bằng chính `tune_to_peft_adapter_weights` thật (đã tin tưởng, là hàm xuôi
+     torchtune tự viết) và `assert torch.equal` từng tensor so với state dict PEFT gốc — từ chối
+     ghi file output nếu không khớp tuyệt đối. Đây KHÔNG phải optional, là điều kiện bắt buộc trước
+     khi cho phép bất kỳ bước tốn GPU nào (xem `manual-t9b.md` Phase 0).
+  4. **Lợi ích phụ phát hiện được**: vì không merge nữa, checkpoint cuối của T9b (sau khi train
+     xong) tự động nằm ở ĐÚNG format PEFT chuẩn (torchtune's `save_checkpoint(adapter_only=True)`
+     tự gọi `tune_to_peft_adapter_weights`/`tune_to_peft_adapter_config` — xác nhận qua
+     `_checkpointer.py`) — T10b eval load thẳng `peft.PeftModel.from_pretrained(base, output_dir)`,
+     không cần suy đoán cấu trúc 2-adapter như lo ngại trước đó trong `manual-t9b.md` bản cũ.
+  5. `yaml` sửa lại: `checkpoint_dir` trỏ base model THUẦN (không merge), thêm
+     `manual_adapter_checkpoint`, bỏ comment liên quan tới merge. `tools/pod_setup/merge_meta_adapter.py`
+     **giữ nguyên, không xoá** — làm fallback nếu round-trip self-check không pass và không kịp sửa
+     trước khi cần chạy.
+- **Rejected alternatives:** Vá `get_adapter_checkpoint_path`/`checkpointer.adapter_checkpoint`
+  trực tiếp — loại, vì đây là 2 lớp **thiết kế có chủ đích** (dành cho resume nội bộ torchtune),
+  vá sẽ phải hiểu + giữ đồng bộ với nhiều phần nội bộ hơn so với patch 1 điểm duy nhất, cục bộ, dễ
+  hiểu (nạp thủ công sau `_setup_model`) đang chọn.
+- **Consequences:** `manual-t9b.md` viết lại hoàn toàn theo quy trình convert+patch mới (Phase 0
+  round-trip bắt buộc trước Phase 1/2). Plan file
+  (`/home/j/.claude/plans/radiant-sprouting-firefly.md`) đã cập nhật khớp quyết định này. Việc
+  CHƯA làm (cần `HF_TOKEN`, agent không có): chạy thật `convert_peft_adapter_to_torchtune.py` để
+  xác nhận round-trip pass trên dữ liệu thật — người dùng tự chạy theo `manual-t9b.md` Phase 0.
+- **Bổ sung cùng ngày — đã tự verify logic convert bằng dữ liệu GIẢ (không cần HF_TOKEN/GPU)**:
+  cài `torch`+`torchtune==0.6.0` thật vào venv tạm, build state dict PEFT giả (random tensor,
+  đúng shape thật Llama-3.1-8B: q_proj/v_proj/gate/up/down_proj, rank=64, 3 layer mẫu) — chạy
+  `peft_to_tune_adapter_weights()` rồi round-trip qua `tune_to_peft_adapter_weights()` THẬT của
+  torchtune: **pass, khớp tuyệt đối**. Thêm 1 test âm: cố tình đổi chiều permute sai (dùng view-axis
+  order của `tune_to_peft_adapter_weights` thay vì chiều đảo ngược) — round-trip check **bắt đúng
+  lỗi**, báo `AssertionError` tại đúng tensor `q_proj.lora_B`. Xác nhận 2 điều: (1) logic convert
+  (key mapping + chiều permute) đúng, không chỉ đúng về lý luận mà đã chạy thật qua code torchtune
+  thật; (2) round-trip self-check có "răng" thật, không phải check hình thức. Việc còn thiếu DUY
+  NHẤT trước khi chạy thật: xác nhận cấu trúc adapter THẬT của Meta (`adapter_config.json`,
+  `adapter_model.safetensors` thật) khớp giả định `lora_attn_modules=['q_proj','v_proj']`/
+  `rank=64` — cần `HF_TOKEN`, người dùng tự chạy `convert_peft_adapter_to_torchtune.py` sẽ tự lộ
+  ra nếu lệch (round-trip vẫn pass dù lệch cấu trúc, vì nó so sánh PEFT gốc với round-trip của
+  CHÍNH set key đó — cái cần xác nhận riêng là liệu key đó có khớp đúng cấu trúc yaml đã khai báo
+  hay không, qua `validate_missing_and_unexpected_for_lora` lúc chạy thật trong recipe, không phải
+  qua round-trip).
+
 ---
 
 ## 4. Câu hỏi treo (Open questions)

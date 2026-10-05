@@ -31,3 +31,8 @@ data/pod_synced/**
 !data/pod_synced/**/
 !data/pod_synced/**/.gitkeep
 !data/pod_synced/README.md
+
+# agent-gov
+.agents/state/
+.agents/*.bak
+__pycache__/

@@ -1629,6 +1629,26 @@
   hay không, qua `validate_missing_and_unexpected_for_lora` lúc chạy thật trong recipe, không phải
   qua round-trip).
 
+### #38 — Vendor artifacts của meta_secalign vào repo chính, không fork/push vào upstream Meta
+
+- **Context:** `external/meta_secalign` (submodule, HEAD detached tại 2031502) có ~22 file
+  untracked quan trọng cho đối chiếu nghiên cứu (`data/` ~56MB: tokenizer, test_cases,
+  jailbreak txt; `helpers/`: yaml config, `lora_dpo_single_device_t9b.py`, `agentdojo.patch`)
+  + `agentdojo` bị modified. Remote `origin` của submodule trỏ thẳng
+  `github.com/facebookresearch/Meta_SecAlign` — không thể/không nên push vào. Người dùng hỏi
+  fork hay làm riêng; chọn phương án B (vendor vào repo chính) để bảo toàn work trong lịch sử
+  git của repo chính, không phụ thuộc remote bên ngoài.
+- **Decision:** Copy `data/` + `helpers/` → `external/meta_secalign_artifacts/` và commit trực
+  tiếp vào repo chính. KHÔNG fork Meta upstream, KHÔNG push vào Meta. Đã verify:
+  `agentdojo` diff hiện tại trong submodule = đúng nội dung `helpers/agentdojo.patch`
+  (trừ dòng `index`) → các sửa đổi agentdojo đã được bảo tồn dưới dạng patch trong
+  `helpers/`, không cần commit riêng. Submodule `external/meta_secalign` giữ nguyên để
+  tham chiếu bản gốc "as-shipped".
+- **Consequences:** Repo chính tăng ~56MB; artifacts này là bản chụp tại thời điểm decision,
+  nếu chỉnh tiếp trong submodule phải copy lại (thủ công). `agentdojo` vẫn nằm dạng
+  submodule-lồng modified — khi cần tái dựng đúng trạng thái, apply lại
+  `external/meta_secalign_artifacts/helpers/agentdojo.patch`.
+
 ---
 
 ## 4. Câu hỏi treo (Open questions)

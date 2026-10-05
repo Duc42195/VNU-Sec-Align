@@ -1,0 +1,116 @@
+# T9b (domain-incremental, VN-only) -- torchtune single-device LoRA DPO config.
+# NOT a Meta file -- adapted from llama3.1_8B_lora.yaml (multi-device) + torchtune's own
+# llama3_1/8B_lora_dpo_single_device.yaml, keeping Meta's anchor hyperparameters (see
+# .agents/record.md Decision #24) and the single-device recipe/structure.
+#
+# Continues training the REAL facebook/Meta-SecAlign-8B adapter (not a merge-then-fresh-LoRA
+# workaround -- see Decision #36/#37). Two prerequisites:
+#   1. tools/pod_setup/convert_peft_adapter_to_torchtune.py -- converts Meta's PEFT adapter to
+#      torchtune-native format (with a mandatory round-trip self-check). manual_adapter_checkpoint
+#      below must point at its output.
+#   2. cache_dir below is the PLAIN base model (meta-llama/Llama-3.1-8B-Instruct, standard 4-shard
+#      HF download) -- no merge step, no custom shard count.
+#
+# Run via the patched recipe copy (external/meta_secalign/helpers/lora_dpo_single_device_t9b.py,
+# NOT torchtune's built-in lora_dpo_single_device -- that one silently drops the adapter, see
+# Decision #36/#37):
+#   tune run external/meta_secalign/helpers/lora_dpo_single_device_t9b.py \
+#     --config external/meta_secalign/helpers/llama3.1_8B_lora_t9b_single_device.yaml \
+#     cache_dir=<plain Llama-3.1-8B-Instruct snapshot dir> \
+#     manual_adapter_checkpoint=<path to convert_peft_adapter_to_torchtune.py's --output_path> \
+#     output_dir=<where to write the new LoRA adapter> \
+#     dataset.data_files=<path to vn_preference_n19000.jsonl>
+# If `tune run <path>.py` fails to import the custom recipe as a dotted module, fall back to:
+#   python external/meta_secalign/helpers/lora_dpo_single_device_t9b.py --config ... <overrides>
+
+output_dir: null
+cache_dir: null
+manual_adapter_checkpoint: null
+
+# Model Arguments -- rank/alpha/dropout/target modules identical to Meta's published recipe
+# (helpers/llama3.1_8B_lora.yaml), NOT the torchtune single_device example defaults.
+model:
+  _component_: torchtune.models.llama3_1.lora_llama3_1_8b
+  lora_attn_modules: ['q_proj', 'v_proj']
+  apply_lora_to_mlp: True
+  apply_lora_to_output: False
+  lora_rank: 64
+  lora_alpha: 8
+  lora_dropout: 0.1
+
+# Tokenizer
+tokenizer:
+  _component_: torchtune.models.llama3.llama3_tokenizer
+  path: ${cache_dir}/original/tokenizer.model
+  max_seq_len: 2048
+
+checkpointer:
+  _component_: torchtune.training.FullModelHFCheckpointer
+  checkpoint_dir: ${cache_dir}/
+  checkpoint_files: [
+    model-00001-of-00004.safetensors,
+    model-00002-of-00004.safetensors,
+    model-00003-of-00004.safetensors,
+    model-00004-of-00004.safetensors
+  ]
+  recipe_checkpoint: null
+  output_dir: ${output_dir}
+  model_type: LLAMA3
+# Always False -- the T9B PATCH loads manual_adapter_checkpoint directly, independent of this flag
+# (resume_from_checkpoint=True would require a recipe-state file we don't have, see Decision #36/#37).
+resume_from_checkpoint: False
+save_adapter_weights_only: True
+
+# Dataset -- REQUIRES external/meta_secalign/helpers/_preference.py copied over the installed
+# torchtune's torchtune/datasets/_preference.py first (stock version expects chat-message lists
+# via a message_transform; ours already has plain prompt/chosen/rejected strings, matching
+# Meta's own data format exactly -- confirmed by diffing against torchtune==0.6.0 stock source).
+dataset:
+  _component_: torchtune.datasets.preference_dataset
+  source: json
+  data_files: null  # override: data/pod_synced/vi_preference_gen/vn_preference_n19000.jsonl
+  packed: False
+  split: train
+seed: null
+shuffle: True
+batch_size: 1
+
+# Optimizer and Scheduler -- lr/weight_decay/epochs/batch per ANCHOR_HYPERPARAMS
+# (src/vi_secalign/config.py); batch_size=1/grad_accum=32 (not Meta's 2/16) for the same reason
+# documented in Decision #24: DPOTrainer's reference-log-prob pass needs a second forward on top
+# of the policy pass on a single GPU. torchtune's DPO recipe does the same double-forward
+# (policy + reference with adapter disabled), so the same OOM risk applies -- keep the margin.
+optimizer:
+  _component_: torch.optim.AdamW
+  fused: True
+  weight_decay: 0.0
+  lr: 1.6e-4
+lr_scheduler:
+  _component_: torchtune.training.lr_schedulers.get_cosine_schedule_with_warmup
+  num_warmup_steps: 0
+
+loss:
+  _component_: torchtune.rlhf.loss.DPOLoss  # beta=0.1 default, matches ANCHOR -- no override needed
+
+# Training
+epochs: 3
+max_steps_per_epoch: null
+gradient_accumulation_steps: 32
+clip_grad_norm: null
+compile: False
+
+# Logging
+metric_logger:
+  _component_: torchtune.training.metric_logging.DiskLogger
+  log_dir: ${output_dir}/logs
+log_every_n_steps: 1
+log_peak_memory_stats: True
+log_level: INFO
+
+# Environment
+device: cuda
+dtype: bf16
+
+# Memory management
+enable_activation_checkpointing: True
+enable_activation_offloading: False

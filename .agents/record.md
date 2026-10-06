@@ -1649,6 +1649,34 @@
   submodule-lồng modified — khi cần tái dựng đúng trạng thái, apply lại
   `external/meta_secalign_artifacts/helpers/agentdojo.patch`.
 
+### #39 — T9b chuyển sang TRL/PEFT (đảo một phần #37); đính chính lý do #5
+
+- **Context:** Sau khi T9b torchtune đã chạy thật Phase 0/1 (convert + round-trip pass +
+  smoke defense còn nguyên), đối chiếu kỹ lại: (1) `secalign_plus_plus.py:93` gốc **dùng
+  torchtune** (`tune run lora_dpo_distributed`); (2) nhưng TRL đã chạy thật cho T9 →
+  nếu T9b chạy torchtune thì so sánh T9 vs T9b lệch cả framework lẫn cách pha dữ liệu,
+  không tách được yếu tố nào; (3) `tools/verify_dpo_loss_equivalence.py` chứng minh
+  loss + reference log-prob TRL 0.22.1 vs torchtune 0.6.0 **khớp tuyệt đối** (max|diff|=0);
+  (4) khác biệt duy nhất còn lại là `lr_scheduler_type` (torchtune yaml = cosine,
+  HF default = linear) → sửa bằng 1 kwarg, và RPO/cDPO ablation chỉ có ở TRL.
+- **Decision:** T9b chạy bằng **TRL/PEFT** (đường giống T9), nạp adapter Meta bằng
+  `PeftModel.from_pretrained(base, 'facebook/Meta-SecAlign-8B', is_trainable=True)` trong
+  `src/vi_secalign/training/train_dpo.py`-style DPOTrainer — KHÔNG dùng torchtune convert
+  path cho train thật. Cần làm thêm: đặt `lr_scheduler_type="cosine"` trong
+  `build_dpo_config()` (chưa có grep `lr_scheduler` nào trong `src/` lúc review) + smoke
+  40 mẫu/3 steps trên pod trước khi thuê long-run. Đường torchtune (convert script +
+  `lora_dpo_single_device_t9b.py` + `merge_meta_adapter.py` + smoke script) giữ làm
+  fallback, **không xoá**.
+- **Đính chính Decision #5:** phần lý do "torchtune `DPOLoss` không có
+  `rpo_alpha`/`label_smoothing`" là SAI nửa — đọc source `torchtune/rlhf/loss/dpo.py`
+  v0.6.0: `DPOLoss.__init__(beta=0.1, label_smoothing=0.0)` **có** `label_smoothing`
+  (cDPO); grep hồi đó tìm trong submodule meta_secalign (chỉ yaml/recipe) nên trống.
+  torchtune chỉ thiếu `rpo_alpha`. Kết luận của #5 (chọn TRL) vẫn giữ, lý do đính chính ở đây.
+- **Consequences:** `docs/reports-on-t9b.md` và `notebooks/t9b-trl-vs-torchtune.ipynb`
+  đã cập nhật khớp; record #37 vẫn giữ nguyên tư liệu/reasoning cho trường hợp cần quay lại
+  torchtune. Phase 0/1 torchtune đã chạy thành công vẫn giữ nguyên giá trị xác nhận
+  adapter Meta đọc được + defense còn nguyên.
+
 ---
 
 ## 4. Câu hỏi treo (Open questions)

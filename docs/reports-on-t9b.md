@@ -1,131 +1,171 @@
-# Báo cáo vấn đề & các phương án xử lý — T9b (tiếp tục train defense của Meta trên dữ liệu VN)
+# Báo cáo T9b — nạp model + adapter, và chọn framework
 
-Ngày lập báo cáo: 2026-10-05. Nguồn gốc quyết định: `.agents/record.md` Decision #36, #37 (#37 thay thế #36).
+Cập nhật: 2026-10-06. Thay thế nội dung cũ của file này (vốn mô tả 4 phương án xử lý
+`checkpointer.adapter_checkpoint` của torchtune). Lý do viết lại: phát hiện ra toàn bộ 4 phương
+án đó đều là hệ quả của một lựa chọn framework không còn cần thiết.
 
-## 1. Bối cảnh và vấn đề cụ thể
+## 1. Mục tiêu T9b
 
-**Mục tiêu T9b:** domain-incremental fine-tuning — bắt đầu từ defense của Meta
-(`facebook/Meta-SecAlign-8B`, thực chất là Llama-3.1-8B-Instruct + một LoRA adapter train
-trên security preference data EN), train tiếp chỉ bằng dữ liệu preference tiếng Việt
-(`vn_preference_n19000.jsonl`), đo VN_ASR giảm và EN_ASR không bị quên (catastrophic forgetting).
+Domain-incremental: bắt đầu từ defense EN đã có (`facebook/Meta-SecAlign-8B` = Llama-3.1-8B-Instruct
++ LoRA adapter train trên security preference data EN), train tiếp **chỉ bằng dữ liệu VN**
+(`vn_preference_n19000.jsonl`), đo VN_ASR giảm và EN_ASR có bị quên hay không (catastrophic forgetting).
 
-**Plan ban đầu** định nạp trực tiếp adapter PEFT của Meta làm điểm khởi đầu LoRA qua field
-`checkpointer.adapter_checkpoint` trong yaml torchtune 0.6.0 — không cần merge, không cần
-convert. Khi viết code thật (session sau), verify lại trực tiếp bằng source pinned
-(`raw.githubusercontent.com/pytorch/torchtune/v0.6.0/...`) thì phát hiện giả định này **sai**.
-Cụ thể có 4 lớp chặn:
+Cần chính xác "cùng một adapter được train tiếp" — không merge, không tạo LoRA mới — đúng nghĩa
+domain-incremental của Decision #20.
 
-1. **Recipe gating:** `lora_dpo_single_device.py::setup()` chỉ truyền
-   `checkpoint_dict[training.ADAPTER_KEY]` vào `_setup_model(lora_weights_state_dict=...)`
-   khi `resume_from_checkpoint=True`. Đặt `False` → adapter bị **bỏ qua âm thầm** (không lỗi,
-   không warning), model train với LoRA random init.
-2. **`resume_from_checkpoint=True` kéo theo `should_load_recipe_state=True`:** checkpointer đòi
-   file `recipe_checkpoint` (optimizer state, epoch...) mà adapter PEFT của Meta không có →
-   không chạy được.
-3. **`get_adapter_checkpoint_path()` (`orchestration/_utils.py:445`) trả `None` ngay từ đầu**
-   nếu `should_load_recipe_state=False`, **bất kể** `adapter_checkpoint` có khai báo trong yaml —
-   nên kể cả vá dòng ternary ở recipe cũng không đủ.
-4. **Không có hàm convert ngược:** `FullModelHFCheckpointer.load_checkpoint()` nạp
-   `adapter_checkpoint` bằng `safe_torch_load()` rồi dùng **nguyên**, không convert key-name
-   nào. Adapter Meta ở format PEFT (key `lora_A`/`lora_B`, phân biệt hoa/thường) và còn bị
-   permute chiều head cho `q_proj`/`k_proj` do RoPE layout khác nhau giữa HF và torchtune.
-   torchtune chỉ có `tune_to_peft_adapter_weights` (export), code tự ghi chú: *"we do NOT have
-   a fn convert_weights.peft_to_tune"*. Nạp bừa → weights nằm sai key, attention projection bị
-   xáo trộn **âm thầm** (chạy được, loss hợp lý, không crash, chỉ ra số liệu tệ khó giải thích).
+## 2. Định nạp model + adapter
 
-Kết luận chung: torchtune 0.6.0 không có đường cấu hình yaml thuần nào để "load adapter PEFT
-ngoài làm init, train như mới". `adapter_checkpoint` chỉ dành cho việc resume đúng checkpoint
-do chính torchtune sinh ra.
+> Phân biệt rõ: **đường Meta gốc là torchtune** (`tune run lora_dpo_distributed`, xem #2a/#2b
+> đối chứng và `secalign_plus_plus.py:93`). TRL là lựa chọn của ta (Decision #5) cho cả T9 lẫn
+> T9b — cùng framework với T9 để so sánh được, và đủ `rpo_alpha`/`label_smoothing` như ghi ở
+> `docs/reports-on-t9b.md` §3. Dưới đây là hai đường, đường torchtune dựng xong nhưng không dùng
+> cho T9b.
 
-## 2. Các phương án đã tìm hiểu
+### 2a. Đường TRL (`transformers` + `peft` + `trl`) — **chọn**
 
-### Phương án A — Merge adapter Meta vào base, train LoRA mới (Decision #36, bị thay thế)
+```python
+model = AutoModelForCausalLM.from_pretrained(base_model, dtype=torch.bfloat16, device_map="auto")
+model = PeftModel.from_pretrained(model, "facebook/Meta-SecAlign-8B", is_trainable=True)  # <- khác T9 1 dòng
+model.enable_input_require_grads()
+trainer = DPOTrainer(model=model, args=dpo_config, ...)   # bỏ peft_config
+```
 
-**Cách hoạt động:**
-- `tools/pod_setup/merge_meta_adapter.py`: `peft.PeftModel.from_pretrained(base, "facebook/Meta-SecAlign-8B").merge_and_unload()` → lưu full-weight `.safetensors`.
-- Train một LoRA **mới** (rank 64, random init) trên bản merged bằng đường LoRA DPO single-device tiêu chuẩn — không cần `adapter_checkpoint`/`resume_from_checkpoint`.
+Ba dòng, tất cả đã có sẵn trong `src/vi_secalign/training/train_dpo.py` (đường này đã chạy thật cho T9).
+`peft` đọc `adapter_config.json` của Meta nên rank/alpha/target_modules lấy đúng số thật, không phải khai
+báo bằng tay. Checkpoint sau train là adapter PEFT thuần → T10b load bằng
+`peft.PeftModel.from_pretrained(base, output_dir)` y hệt mọi checkpoint khác trong project.
 
-**Đóng góp / ý nghĩa:**
-- EN-delta bị "đóng băng" (bake vào base, không trainable) → không có rủi ro ghi đè trực tiếp, an toàn về EN forgetting; toàn bộ cập nhật VN nằm ở LoRA riêng.
-- Nhược: không còn là "continue-train đúng adapter Meta" theo nghĩa đen — điểm phương pháp luận
-  của Decision #20 bị lệch (vẫn là domain-incremental hợp lệ, nhưng cần công bố đúng biến thể,
-  ghi Limitations, không gọi chung chung "continue-train").
+### 2b. Đường torchtune (đường cũ, đã dựng xong nhưng không dùng)
 
-### Phương án B — Tạo file `recipe_checkpoint` giả để lách điều kiện resume (bị loại)
+```
+build lora_llama3_1_8b → FullModelHFCheckpointer.load_checkpoint() (base, qua hf_to_tune)
+→ convert file .pt (peft_to_tune_adapter_weights) → patch T9B PATCH: load_state_dict(strict=False)
+qua config key `manual_adapter_checkpoint`
+```
 
-**Cách hoạt động:** tự điền `EPOCHS_KEY=0`, `OPT_KEY={}`... vào file recipe-state để torchtune
-chấp nhận `resume_from_checkpoint=True`, rồi khai báo `adapter_checkpoint` trỏ adapter Meta.
+Ba bước này chỉ tồn tại vì torchtune **không đọc được adapter format PEFT**. Nguyên nhân (đã verify từ
+source pinned v0.6.0): `adapter_checkpoint` bị chặn bởi (1) `get_adapter_checkpoint_path()` trả `None`
+nếu không `resume_from_checkpoint`; (2) recipe cũng gate riêng `lora_weights_state_dict`; (3) bật
+`resume_from_checkpoint` lại đòi file recipe-state mà adapter Meta không có; (4)
+`FullModelHFCheckpointer` nạp adapter bằng `safe_torch_load()` **không convert key-name**, còn
+`q_proj`'s `lora_B` còn phải permute chiều head do layout RoPE HF/torchtune khác nhau — torchtune chỉ
+có hàm xuôi `tune_to_peft_adapter_weights`, code tự ghi chú *"we do NOT have a fn
+convert_weights.peft_to_tune"*. Nạp bừa → weights sai key, chạy được, loss hợp lệ, chỉ ra số liệu tệ
+(lỗi âm thầm).
 
-**Đóng góp / ý nghĩa:** hình thức giống resume nhưng không đúng — đang đoán cấu trúc file nội
-bộ không có trong docs công khai. Rủi ro silent-corrupt cao hơn lợi ích. (Kèm theo đó là lớp
-chặn #4 ở trên: dù qua được gating, weights PEFT vẫn vào sai key → hỏng âm thầm.)
+## 3. Khác biệt giữa hai framework
 
-### Phương án C — Fork recipe, sửa 1 dòng điều kiện ternary (bị loại một phần, sau loại hẳn)
+| | TRL 0.22.1 | torchtune 0.6.0 |
+|---|---|---|
+| Nạp adapter PEFT ngoài | `PeftModel.from_pretrained`, native | không hỗ trợ → convert + patch |
+| Code phải tự viết | ~3 dòng | convert script + patch recipe + smoke script |
+| cDPO (`label_smoothing`) | có | **có** (`DPOLoss(beta, label_smoothing)`) |
+| RPO (`rpo_alpha`) | có | không |
+| Reference log-prob | adapter-disable forward | adapter-disable forward |
+| lr scheduler mặc định | `"linear"` | yaml: cosine |
+| Tình trạng upstream | active | "wound down", phải vendor recipe |
+| Đã chạy train thật trong project | T9 (xong) | chưa |
 
-**Cách hoạt động:** sửa `checkpoint_dict[training.ADAPTER_KEY] if self._resume_from_checkpoint else None` trong `setup()`.
+**Sửa một hiểu lầm đã ghi trong Decision #5:** lý do chọn TRL được ghi là "torchtune `DPOLoss` không có
+`rpo_alpha`/`label_smoothing`". Đọc source thật của `torchtune/rlhf/loss/dpo.py` (tag v0.6.0):
+`DPOLoss.__init__(self, beta=0.1, label_smoothing=0.0)` — **có `label_smoothing`**. Lý do grep hồi đó
+là grep trong submodule `external/meta_secalign` (chỉ chứa yaml/recipe của Meta), không phải trong thư viện
+torchtune, nên kết luận sai. Đúng là torchtune chỉ thiếu `rpo_alpha`; Decision #5 vẫn đúng về kết luận
+(chọn TRL) nhưng sai về lý do nửa.
 
-**Đóng góp / ý nghĩa:** từng được xem là đủ, nhưng sau khi phát hiện lớp chặn #3
-(`get_adapter_checkpoint_path()` trả `None` không điều kiện) thì vá 1 dòng không giải quyết được;
-muốn xong phải vá cả helper + giữ đồng bộ với nhiều phần nội bộ, trong khi torchtune đã "wound
-down" — tự vá phải gánh mãi qua mọi version.
+## 4. Xác minh loss & optimizer có khác nhau không
 
-### Phương án D — Continue-train ĐÚNG adapter Meta: convert ngược + patch recipe (Decision #37, **đang chọn**)
+Không đọc source suông — chạy cả hai hàm thật trên cùng batch giả rồi assert:
+`tools/verify_dpo_loss_equivalence.py` (CPU, không cần GPU/mạng sau lần tải source đầu).
 
-**Cách hoạt động:**
-1. `tools/pod_setup/convert_peft_adapter_to_torchtune.py` viết hàm `peft_to_tune_adapter_weights()` — đảo ngược hàm xuôi `tune_to_peft_adapter_weights` thật của torchtune (import `_FROM_HF`/`_TO_PEFT_KEYS`/`get_mapped_key` từ `torchtune.models.convert_weights`, không chép tay): đảo tên key (`lora_A`/`lora_B` ↔ `lora_a`/`lora_b`) + đảo chiều permute head cho `q_proj`/`k_proj`.
-2. **Round-trip self-check bắt buộc:** kết quả convert phải qua ngược lại bằng `tune_to_peft_adapter_weights` thật và `assert torch.equal` từng tensor với state dict PEFT gốc; lệch tuyệt đối → từ chối ghi file. Đã test trên dữ liệu giả: logic convert khớp tuyệt đối, và test âm (cố tình đảo permute sai chiều) → round-trip bắt đúng lỗi. Đây là cổng chặn chính cho rủi ro hỏng âm thầm.
-3. `external/meta_secalign/helpers/lora_dpo_single_device_t9b.py`: vendor + patch **đúng 1 điểm** — ngay sau `self._model = self._setup_model(...)`, nạp file convert qua `load_state_dict(strict=False)`, validate bằng `validate_missing_and_unexpected_for_lora` có sẵn. Config key mới `manual_adapter_checkpoint`, **không đụng** `adapter_checkpoint`/`resume_from_checkpoint` của torchtune.
-4. Checkpoint cuối tự nằm đúng format PEFT chuẩn (`save_checkpoint(adapter_only=True)` của torchtune tự convert ngược) → T10b load thẳng bằng `peft.PeftModel.from_pretrained`, không cần cấu trúc 2-adapter như lo ngại ở bản cũ.
+```
+$ python tools/verify_dpo_loss_equivalence.py
+[1] tong log-prob: KHOP (max|diff| = 0.000e+00)
+[2] loss DPO beta=0.1 label_smoothing=0.0: KHOP (max|diff| = 0.000e+00)
+[2] loss DPO beta=0.1 label_smoothing=0.1: KHOP (max|diff| = 0.000e+00)
+```
 
-**Đóng góp / ý nghĩa:**
-- Đúng nghĩa đen Decision #20: cùng một adapter, tiếp tục train bằng gradient VN — VN-delta và
-  EN-delta cùng nằm trong 1 LoRA, có thể quan sát trôi/dạt EN thật sự (khả năng đo được EN
-  forgetting ở mức weight, không chỉ mức hành vi).
-- Chi phí trả: phải tự viết + tự chứng minh hàm convert ngược rủi ro cao, đổi lại bằng round-trip
-  check có "răng" thật và chạy được trên dữ liệu giả trước khi tốn GPU.
-- Giữ `merge_meta_adapter.py` làm fallback nếu round-trip không pass và không kịp sửa.
+### 4a. Loss — GIỐNG HỆT
 
-### Các nhánh phụ đã cân nhắc, chưa làm
+| Hạng mục | TRL 0.22.1 | torchtune 0.6.0 | Kết quả |
+|---|---|---|---|
+| Tổng log-prob | `per_token_logps[:, 1:].sum(-1)` (`dpo_trainer.py:1579`) | `(per_token_log_probs * loss_mask).sum(-1)` (`sequence_processing.py:144`) | giống — cùng SUM, không phải mean |
+| Token bị bỏ | `loss_mask` (prompt + padding) | `label_pad_token_id = -100` | giống |
+| Công thức | `-(1-ls)·logsigmoid(β·h) - ls·logsigmoid(-β·h)`, `loss_type="sigmoid"` | y hệt dòng 82-85 | giống tuyệt đối |
+| `beta` | 0.1 | 0.1 | giống |
 
-- **(a) Mỗi ngôn ngữ 1 LoRA độc lập trên base thuần** (không qua adapter Meta): trả lời câu hỏi
-  khác hẳn (VN defense có cần init từ EN defense không), không phải domain-incremental theo
-  Decision #20 → ablation rẻ, deferred sang T22.
-- **(b) Chạy cả merge-approach lẫn continue-approach để so sánh:** bị từ chối ở ngay bước này —
-  tốn thêm 1 vòng GPU rental để so sánh trước khi biết có vấn đề thật không; chỉ quay lại nếu
-  kết quả D bất thường.
+Hai điểm từng lo ngại đã được loại trừ bằng số:
+- **Sum vs mean**: cả hai đều SUM trên token của response → **thang loss giống nhau**, `lr=1.6e-4` của
+  anchor giữ nguyên ý nghĩa khi chuyển framework.
+- **Chia `(1 - 2·label_smoothing)`**: chỉ nhánh `loss_type="robust"` của TRL chia
+  (`dpo_trainer.py:1071-1073`); nhánh `"sigmoid"` (mặc định) **không chia**. torchtune cũng không chia.
 
-## 3. Bảng so sánh nhanh
+### 4b. Reference log-prob — GIỐNG
 
-| Phương án | Đúng "continue-train adapter Meta"? | Rủi ro chính | Mức công sức | Kết luận |
-|---|---|---|---|---|
-| A. Merge + LoRA mới | Không (EN đóng băng) | Lệch claim phương pháp | Thấp | #36 — thay thế bởi #37, giữ làm fallback |
-| B. Recipe-state giả | Hình thức | Silent-corrupt, nặng nhất | Thấp | Loại |
-| C. Vá 1 dòng recipe | Có, nếu đủ | Chưa đủ (lớp #3), gánh fork mãi | Trung bình | Loại |
-| **D. Convert ngược + patch 1 điểm** | **Có** | Permute sai chiều → hỏng âm thầm | **Cao** | **#37 — đang chọn**, gate bằng round-trip check |
+Cả hai đều lấy log-prob của chính model đang train với LoRA **bị tắt** (`disable_adapter`), tức base
+đóng băng — hàm này không đổi trong suốt train. Khác nhau ở *cách tính*, không phải *giá trị*:
+torchtune chạy forward reference mỗi step; TRL dùng `precompute_ref_log_probs=True` chạy một lần rồi
+cache (chính là fix memory đã ghi trong `dpo_config.py`). Giá trị thu được bằng nhau.
 
-## 4. Trạng thái hiện tại
+### 4c. RPO — KHÁC, và đây là khác biệt có ý nghĩa
 
-- Code D đã viết xong, round-trip tự verify pass trên dữ liệu giả (không cần HF_TOKEN/GPU).
-- **2026-10-06 — Phase 0 chạy thật THÀNH CÔNG:** `convert_peft_adapter_to_torchtune.py` in
-  `[convert] Round-trip OK -- 320 tensors match exactly.` (không AssertionError) → cấu trúc
-  adapter thật của Meta khớp giả định (`lora_attn_modules=['q_proj','v_proj']`, `rank=64`).
-  Output `checkpoints/meta_secalign_8b_adapter_torchtune.pt` đã upload
-  HF `Jason-42195/VNU-SecAlign:pod_outputs/convert_peft_adapter_to_torchtune/`.
-- **2026-10-06 — Phase 1 smoke PASS trên Colab T4 (chạy thật, log tại Colab `/content/smokebnb.log`):**
-  - Đường chính `tools/pod_setup/smoke_t9b_generate.py` (torchtune `quantize_base=True`)
-    **bị kẹt** ở bước build model (xem ghi chú kỹ thuật dưới) — không in ra kết quả gì.
-  - Fallback tương đương `/home/j/smoke_bnb.py` (đã sửa lỗi `generate` cần `return_dict=True`
-    trong transformers 5.18): adapter đã convert nạp được vào base
-    (log `[smoke] adapter loaded ok`), prompt injection bị chặn (response từ chối, không lộ
-    system prompt: *"I'm sorry, but I'm a large language model, I don't have a system prompt
-    to display..."*), prompt VN benign trả lời bình thường, mạch lạc.
-  - **Kết luận Phase 1: PASS** theo nghĩa "adapter converted đúng end-to-end + defense còn
-    nguyên vẹn"; giới hạn kỹ thuật duy nhất là đường torchtune thuần `quantize_base=True`
-    không chạy được trên Colab torch 2.11 (torchao 0.18: `quantize_tensor_nearest` vòng lặp
-    CPU trong build model, VRAM không tăng, không bao giờ xong) → smoke thực bằng đường
-    tương đương `transformers + peft + bitsandbytes 4-bit NF4` — cùng kỹ thuật T10 eval đã
-    dùng trên T4. Đây là giới hạn môi trường Colab, không phải lỗi của convert pipeline.
-    Khi chạy Phase 2 thật trên pod GPU cần dùng lại đúng đường `torchtune`, nếu vẫn gặp
-    cùng hang thì phải vá `quantize_base` sang `transformers+bnb` trước khi train.
-- Còn thiếu cho Phase 2: thuê GPU thật (RTX ≥32GB), chạy N=19.157 VN thật bằng recipe đã patch
-  `external/meta_secalign/helpers/lora_dpo_single_device_t9b.py` theo `manual-t9b.md` Phase 2.
+`rpo_alpha` (thêm `alpha · NLL(chosen)`) **chỉ có ở TRL**. Hệ quả: các nhánh ablation
+`dpo_rpo` / `dpo_rpo_cdpo` trong `proposal.md` chỉ chạy được trên TRL. Nhưng arm chính của T9b là **plain
+DPO** — và đó cũng đúng phương pháp mà cả hai paper SecAlign/SecAlign++ thực sự dùng (không RPO, không
+cDPO, đã đọc trực tiếp). Nên thiếu RPO không chặn T9b; nó chỉ định nghĩa ablation về sau chạy trên
+đường TRL, và phải ghi rõ trong bài.
+
+### 4d. Optimizer / scheduler — khác 1 chỗ, sửa được bằng 1 tham số
+
+| | torchtune yaml | TRL/HF `DPOConfig` hiện tại | Xử lý |
+|---|---|---|---|
+| optimizer | AdamW `fused=True` | AdamW (HF default, không fused) | tương đương về toán học |
+| `weight_decay` | 0.0 | 0.0 (HF default) | khớp |
+| `learning_rate` | 1.6e-4 | 1.6e-4 (từ `ANCHOR_HYPERPARAMS`) | khớp |
+| scheduler | **cosine**, `num_warmup_steps: 0` | **"linear"** (HF default) | **phải sửa:** thêm `lr_scheduler_type="cosine"` |
+| `batch_size` / `grad_accum` | 1 / 32 | 1 / 32 | khớp (effective batch 32) |
+| `epochs` | 3 | 3 | khớp |
+
+Đây là **sai lệch duy nhất còn lại** giữa hai đường, và nó là cấu hình chứ không phải toán học: sửa bằng
+một kwarg trong `build_dpo_config()`.
+
+### 4e. Cắt chuỗi — khác nhẹ, phải ghi khi viết bài
+
+torchtune `max_seq_len=2048` cắt prompt/completion riêng theo dataset impl; TRL `max_length=2048` +
+`max_prompt_length=384`, cắt prompt từ trái và completion từ phải. Với prompt VN thường <384 token nên
+gần như không khác; chỉ các mẫu dài (theo ghi chú trong `dpo_config.py`, ~99.9th percentile ≈1960 token)
+mới bị xử lý khác. Cần nêu effective truncation khi báo cáo, không coi là blocker.
+
+## 5. Quyết định
+
+**Dùng TRL cho T9b.** Căn cứ:
+1. Loss và reference log-prob tương đương tuyệt đối (đo bằng số, mục 4a/4b).
+2. Optimizer/scheduler lệch đúng một chỗ, sửa bằng `lr_scheduler_type="cosine"`.
+3. Nạp adapter Meta gọn 1 dòng — bỏ được `convert` + `patch` + round-trip check.
+4. **Không lệch framework với T9**: T9 (joint EN+VN từ đầu) chạy TRL. Nếu T9b chạy torchtune thì so sánh
+   T9 vs T9b lệch cả framework lẫn cách pha dữ liệu, không tách được yếu tố nào.
+5. RPO/cDPO có sẵn cho ablation, đúng như Decision #5 và `proposal.md`.
+
+**Việc còn phải làm trước khi thuê pod:**
+- Thêm `lr_scheduler_type="cosine"` vào `build_dpo_config()`.
+- Smoke trên pod: 40 mẫu, `max_steps=3` → xác nhận loss khác 0, không NaN, `rewards/accuracies` hợp lý.
+- Ghi rõ trong bài: T9b dùng TRL 0.22.1/peft 0.14.0/transformers 4.57.1, tiếp tục train adapter Meta,
+  cosine + warmup 0 + lr 1.6e-4 + effective batch 32 + beta 0.1 + max_length 2048.
+
+**Tư liệu cũ giữ làm fallback:** `tools/pod_setup/convert_peft_adapter_to_torchtune.py`,
+`external/meta_secalign/helpers/lora_dpo_single_device_t9b.py`, `tools/pod_setup/merge_meta_adapter.py`,
+`tools/pod_setup/smoke_t9b_generate.py` — không xoá (`.agents/record.md` Decision #37 giữ
+`merge_meta_adapter.py` làm fallback theo cùng nguyên tắc).
+
+## 6. Trạng thái Phase 0/1 cũ (torchtune) — đã xong, không còn là cổng chặn
+
+- **Phase 0** PASS: `[convert] Round-trip OK -- 320 tensors match exactly.` → cấu trúc adapter thật của
+  Meta khớp giả định (`lora_attn_modules=['q_proj','v_proj']`, `rank=64`). File `.pt` đã upload HF.
+- **Phase 1** smoke PASS (2026-10-06): adapter đã convert nạp vào base không lỗi (`0 unexpected`),
+  prompt injection bị chặn, prompt VN trả lời mạch lạc. Đường torchtune `quantize_base=True` bị kẹt
+  trên Colab torch 2.11 (torchao 0.18 đã bỏ `torchao.dtypes.nf4tensor` — đã tái hiện lại khi dựng venv
+  ở máy local), nên smoke chạy bằng đường tương đương `transformers + peft + 4-bit`, cùng kỹ thuật T10
+  eval dùng trên T4.
+
+Hai kết quả này vẫn có giá trị: chúng xác nhận **adapter Meta đọc được và defense còn nguyên vẹn** —
+đúng thứ cần xác nhận trước khi train tiếp, dù đường train là đường nào.

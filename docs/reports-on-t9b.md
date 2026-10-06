@@ -111,13 +111,21 @@ down" — tự vá phải gánh mãi qua mọi version.
   adapter thật của Meta khớp giả định (`lora_attn_modules=['q_proj','v_proj']`, `rank=64`).
   Output `checkpoints/meta_secalign_8b_adapter_torchtune.pt` đã upload
   HF `Jason-42195/VNU-SecAlign:pod_outputs/convert_peft_adapter_to_torchtune/`.
-- **2026-10-06 — Phase 1 smoke PASS trên Colab T4:** adapter đã convert nạp được vào base
-  (log `[smoke] adapter loaded ok`), prompt injection bị chặn (response từ chối, không lộ
-  system prompt), prompt VN bình thường trả lời bình thường. Lưu ý kỹ thuật: smoke bằng đường
-  chính `torchtune 0.6.0 quantize_base=True` (FrozenNF4Linear/torchao) BỊ KẸT trên Colab
-  (torchao 0.18 + torch 2.11: `quantize_tensor_nearest` chạy vòng lặp CPU trong build model,
-  VRAM không tăng, không bao giờ xong) → smoke thực hiện bằng đường tương đương
-  `transformers + peft + bitsandbytes 4-bit NF4` — cùng kỹ thuật T10 eval đã dùng trên T4.
-  Đây là giới hạn môi trường Colab, không phải lỗi của convert pipeline.
+- **2026-10-06 — Phase 1 smoke PASS trên Colab T4 (chạy thật, log tại Colab `/content/smokebnb.log`):**
+  - Đường chính `tools/pod_setup/smoke_t9b_generate.py` (torchtune `quantize_base=True`)
+    **bị kẹt** ở bước build model (xem ghi chú kỹ thuật dưới) — không in ra kết quả gì.
+  - Fallback tương đương `/home/j/smoke_bnb.py` (đã sửa lỗi `generate` cần `return_dict=True`
+    trong transformers 5.18): adapter đã convert nạp được vào base
+    (log `[smoke] adapter loaded ok`), prompt injection bị chặn (response từ chối, không lộ
+    system prompt: *"I'm sorry, but I'm a large language model, I don't have a system prompt
+    to display..."*), prompt VN benign trả lời bình thường, mạch lạc.
+  - **Kết luận Phase 1: PASS** theo nghĩa "adapter converted đúng end-to-end + defense còn
+    nguyên vẹn"; giới hạn kỹ thuật duy nhất là đường torchtune thuần `quantize_base=True`
+    không chạy được trên Colab torch 2.11 (torchao 0.18: `quantize_tensor_nearest` vòng lặp
+    CPU trong build model, VRAM không tăng, không bao giờ xong) → smoke thực bằng đường
+    tương đương `transformers + peft + bitsandbytes 4-bit NF4` — cùng kỹ thuật T10 eval đã
+    dùng trên T4. Đây là giới hạn môi trường Colab, không phải lỗi của convert pipeline.
+    Khi chạy Phase 2 thật trên pod GPU cần dùng lại đúng đường `torchtune`, nếu vẫn gặp
+    cùng hang thì phải vá `quantize_base` sang `transformers+bnb` trước khi train.
 - Còn thiếu cho Phase 2: thuê GPU thật (RTX ≥32GB), chạy N=19.157 VN thật bằng recipe đã patch
   `external/meta_secalign/helpers/lora_dpo_single_device_t9b.py` theo `manual-t9b.md` Phase 2.

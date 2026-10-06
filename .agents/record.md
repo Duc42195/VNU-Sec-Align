@@ -1679,6 +1679,36 @@
 
 ---
 
+### #40 — T9b: TRL + Optuna, điểm xuất phát = hyperparameter gốc của Meta, tìm rộng
+
+- **Context:** So sánh TRL (pod: transformers 4.57.1, trl 0.22.1) vs torchtune v0.6.0 về loss
+  và optimizer (nguồn verify: `tools/verify_dpo_loss_equivalence.py` chạy float64 trên CPU,
+  assert từng phần tử). Kết quả: (1) **loss DPO khớp tuyệt đối** — TRL nhánh `loss_type="sigmoid"`
+  dùng cùng công thức `-logsigmoid(β·Δ)(1-ls) - logsigmoid(-β·Δ)·ls` như `torchtune/rlhf/loss/dpo.py`,
+  cùng tổng log-prob trên token khác mask (`trl_dpo.py:1575` vs `tt_seqproc.py:104`); RPO
+  (`rpo_alpha`) chỉ có ở TRL. (2) **Optimizer lệch 2 trục nếu để TRL mặc định**: Meta
+  `helpers/llama3.1_8B_lora.yaml:64-81` dùng `AdamW(fused=True), weight_decay=0.0, lr=1.6e-4,
+  get_cosine_schedule_with_warmup(warmup=0), clip_grad_norm=null` — HF mặc định lại là
+  `AdamW non-fused, lr_scheduler_type="linear", max_grad_norm=1.0` (clip ở norm 1.0). Betas/eps
+  (0.9,0.999,1e-8) trùng nhau. (3) TRL khớp được 100% với 3 kwarg:
+  `optim="adamw_torch_fused", lr_scheduler_type="cosine", max_grad_norm=0.0` (công thức cosine
+  của HF `optimization.py:141` giống hệt torchtune `lr_schedulers.py:43-56`, đều `num_cycles=0.5`;
+  `max_grad_norm=0.0` tắt clip theo `trainer.py:2697`). (4) Khác biệt nhỏ duy nhất còn lại: số
+  step — HF `trainer.py:5682` dùng **ceil** → 1797; torchtune floor → 1794 (0.17%, không đáng kể).
+- **Decision:** T9b chạy **TRL** (giữ #39), và thay vì hard-code 1 bộ hyperparameter, dùng
+  **Optuna** với **điểm xuất phát = hyperparameter gốc của Meta** (lr 1.6e-4, β 0.1, cosine+warmup 0,
+  không clip, AdamW fused, wd 0.0, LoRA r=64 α=8 dropout 0.1, 3 epochs, effective batch 32),
+  sau đó **tìm rộng xung quanh** (trial đầu = giá trị Meta). Mục tiêu: biết Meta's config có phải
+  tốt nhất cho VN domain-incremental không, đồng thời vẫn có điểm "published config" làm mốc.
+- **Rejected alternatives:** (a) hard-code y hệt Meta — khớp số tuyệt đối nhưng không trả lời
+  được RQ3 (có config nào tốt hơn); (b) để mặc định TRL + Optuna từ mốc tự chọn — mốc lệch Meta,
+  mất "published baseline"; (c) chạy lại T9 với cosine+no-clip để đồng bộ — chi phí ~15h, để dành
+  cho nếu T9b+Optuna chỉ ra Meta's config là tối ưu (lúc đó hiệu số giữa T9 và T9b có thể do
+  optimizer, sẽ cần control).
+- **Consequences:** `build_dpo_config()` cần expose `optim/lr_scheduler_type/max_grad_norm` (hoặc
+  nhận kwargs) để Optuna gán được; T9 đã chạy với linear+clip1.0 — **ghi nhận lệch này trong bài**
+  khi so T9 vs T9b trên cùng số liệu. Hiện trạng T22 ablation RQ3 đã định hướng y hệt.
+
 ## 4. Câu hỏi treo (Open questions)
 
 - **RQ1** *(GĐ2)*: Security policy học từ dữ liệu preference thuần tiếng Anh có

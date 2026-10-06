@@ -24,3 +24,9 @@ Format:
 - Symptom: `tune download`, `pip install`, smoke generate trên Colab đều fail với `RuntimeError: Connection was lost` dù session vẫn READY.
 - Root cause: `colab exec` (typer) mặc định `--timeout 30.0` giây; websocket bị cắt khi quá hạn → traceback `TimeoutError: Timeout waiting for reply` xuất hiện khi tune download 16GB hoặc pip install torch.
 - Fix: truyền `--timeout` lớn cho mọi `colab exec`/`colab install`, hoặc chạy detached trên VM (`python -u script.py > /content/x.log 2>&1 &` rồi poll file) khi bước có thể mất >20 phút; session T4 miễn phí hay bị prune → mọi thứ trên `/content` mất theo, luôn log ra file + copy code lên HF để tái tạo nhanh.
+
+## 2026-10-06 — Optimizer mặc định của HF Trainer KHÔNG khớp Meta (cosine→linear, no-clip→clip 1.0)
+- Symptom: T9 (TRL) có vẻ "không sát Meta" khi viết so sánh optimizer, trong khi dùng chung LoRA config.
+- Root cause: mặc định HF Trainer là `AdamW non-fused`, `lr_scheduler_type="linear"`, `max_grad_norm=1.0`; Meta (torchtune yaml `llama3.1_8B_lora.yaml:64-81`) là `AdamW fused=True, wd 0.0, cosine(warmup 0), clip_grad_norm: null`. Paper 2507.02735v3 không nêu optimizer/scheduler/clipping → phải đọc từ yaml trong repo.
+- Fix: `DPOConfig(optim="adamw_torch_fused", lr_scheduler_type="cosine", max_grad_norm=0.0)` khớp 100% Meta; loss đã chứng minh khớp tuyệt đối bằng `tools/verify_dpo_loss_equivalence.py`. Chỉ còn lệch tổng step: HF `trainer.py:5682` ceil → 1797 vs torchtune floor → 1794 (0.17%, chấp nhận được).
+- Lesson: "framework khác" không đồng nghĩa "loss khác" — TRL nhánh sigmoid DPO là cùng công thức với torchtune `DPOLoss`; phần lệch nằm ở default optimizer/scheduler. Verify bằng số (assert từng phần tử trong float64), đừng chỉ grep.

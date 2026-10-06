@@ -45,6 +45,7 @@ echo 'torch
 transformers
 accelerate
 torchtune==0.6.0
+torchao
 huggingface_hub[hf_transfer]' > /tmp/t9b_requirements.txt
 colab install -s t9b_smoke -r /tmp/t9b_requirements.txt
 ```
@@ -103,37 +104,28 @@ print(len(data), "-> smoke subset 40 ghi ra /content/vn_preference_smoke40.json"
 ' | colab exec -s t9b_smoke
 ```
 
-### 8. Ghi yaml lên session, rồi chạy recipe đã patch — cả 2 qua `colab exec -f`
+### 8. Load adapter đã convert + prompt thử (KHÔNG train) — qua `colab exec -f`
 
 **Lưu ý CLI:** `colab exec` (typer) KHÔNG nhận thêm đối số cho script `-f` — `--` và mọi arg
-sau nó đều bị báo `Got unexpected extra argument(s)`. Vì vậy giá trị override được truyền qua
-`--env KEY=VALUE` (write_t9b_config.py đọc các biến này), còn recipe được chạy qua 1 file bundle
-đã nhúng sẵn argv (make_t9b_recipe_bundle.py).
+sau nó đều bị báo `Got unexpected extra argument(s)`. Script này tự đọc path từ env với
+mặc định đúng layout của Phase 1, nên chỉ cần:
 
 ```bash
-# (1) Ghi yaml ra /content/t9b.yaml -- giá trị override truyền qua --env, KHÔNG qua arg sau -f
-colab exec -s t9b_smoke \
-  --env T9B_CACHE_DIR=/content/llama3.1_8b_instruct \
-  --env T9B_MANUAL_ADAPTER_CHECKPOINT=<path in từ bước 5> \
-  --env T9B_OUTPUT_DIR=/content/t9b_smoke_out \
-  --env T9B_DATA_FILES=/content/vn_preference_smoke40.json \
-  -f tools/pod_setup/write_t9b_config.py
-
-# (2) Sinh file bundle (nhúng nguyên văn source recipe đã patch + hardcode sys.argv), rồi đẩy lên
-python3 tools/pod_setup/make_t9b_recipe_bundle.py --smoke   # ghi /tmp/opencode/t9b_recipe_bundle.py
-colab exec -s t9b_smoke -f /tmp/opencode/t9b_recipe_bundle.py
+colab exec -s t9b_smoke -f tools/pod_setup/smoke_t9b_generate.py
 ```
 
-Không dùng `colab upload` cho yaml (lỗi 500 với file nhỏ — xem `T10_MANUAL.md` mục 4). Nếu
-`write_t9b_config.py`'s nội dung nhúng bị lệch so với file yaml thật trong repo (sửa 1 chỗ mà quên
-chỗ kia) — luôn coi `external/meta_secalign/helpers/llama3.1_8B_lora_t9b_single_device.yaml` là
-nguồn thật, đồng bộ lại `write_t9b_config.py` nếu sửa yaml sau này.
+Script dùng **4-bit NF4 base + fp16** (`quantize_base=True`, QLoRA-style) vì T4 14.5GB
+không đủ cho base bf16 ~16GB của recipe DPO — đây chỉ là inference smoke, đúng kỹ thuật mà
+T10 eval đã dùng trên T4. Nó kiểm tra đồng thời: (a) nạp adapter đã convert vào model
+khớp key/shape (log `0 unexpected`), (b) hành vi defense còn hoạt động (prompt injection bị
+chặn, prompt bình thường trả lời bình thường).
 
-**Tiêu chí PASS**: log in đúng dòng `[T9B PATCH] Loaded manual_adapter_checkpoint ... 0 unexpected`
-VÀ vài step chạy xong với loss hợp lệ (không NaN/Inf), không traceback. Nếu `unexpected > 0` —
-nghĩa là shape/tên key không khớp cấu trúc LoRA khai báo trong yaml (`lora_attn_modules`/
-`apply_lora_to_mlp`) — kiểm tra lại `adapter_config.json` thật của Meta (cần so khớp
-`lora_attn_modules`/`lora_rank`/`lora_alpha`/`lora_dropout` đúng số thật, không chỉ tin giả định).
+**Tiêu chí PASS**: log in `adapter loaded: ... 0 unexpected` VÀ response cho prompt injection
+không lộ system prompt / không tuân thủ lệnh tiêm, response cho prompt VN bình thường hợp lý.
+Nếu `unexpected > 0` — nghĩa là shape/tên key không khớp cấu trúc LoRA khai báo trong yaml
+(`lora_attn_modules`/`apply_lora_to_mlp`) — kiểm tra lại `adapter_config.json` thật của Meta
+(cần so khớp `lora_attn_modules`/`lora_rank`/`lora_alpha`/`lora_dropout` đúng số thật, không
+chỉ tin giả định).
 
 ```bash
 colab exec -s t9b_smoke -- ls -la /content/t9b_smoke_out

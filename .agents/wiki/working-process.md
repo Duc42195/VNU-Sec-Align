@@ -58,6 +58,20 @@ via `--env` and have the remote script read `os.environ`. `--env` also works for
 `echo '...' | colab exec` form. Do this: never put `--` or recipe-style `key=value` overrides
 after the `-f` argument.
 
+## 2026-10-06 — Notebook Colab: Drive mount path, và luôn diff cell TRƯỚC khi rsync đè
+Project KHÔNG được mount trên Drive. Drive chỉ giữ thư mục notebook/tài liệu tại
+`/home/j/GoogleDrive/MinhDuc42195/VNU/Final` (chỉ có `19-mar/`, `Docs/`, `Notebooks/` — không có
+`.agents/`, `src/`, `plan.csv`); repo chỉ tồn tại ở `/home/j/Workspace/VNU/Final`. Notebook chạy trên
+Colab nằm ở `.../VNU/Final/Notebooks/<tên>.ipynb`; đồng bộ về local bằng `rsync`, **chiều Drive →
+local** (bản local thường là bản sạch, `outputs: []`, không có kết quả chạy).
+
+Hai remote rclone đã mount sẵn: `MinhDuc42195` và `Duc n Huyen` — xem `mount | grep fuse.rclone`.
+
+**Bẫy đã dính:** hai bản lệch cấu trúc cell. Bản Drive có thể đã bị xoá cell `notebook_login()`
+(vì chứa HF token gated) trước khi upload → rsync đè sẽ **xoá mất cell đó** ở local, và mất luôn
+khả năng chạy lại notebook. Do đó: trước khi rsync, so sánh số cell và diff `source` của các cell
+(`python3 -c "import json; ..."`) rồi hỏi user chọn merge / rsync-thẳng / chấp nhận mất.
+
 ## Standup checks
 Read by `/plan-check` when it is installed. Add 3 to 6 checks that fit this project as bullet lines starting with `- ` below this paragraph. One check per line: a read-only command to run or a file to read, and what counts as a failure. `/plan-check` runs them and prints only the ones that fail.
 Examples (not active, copy the ones you want): the gate passes on the default branch; a task is `done` but its `review` is still `pending`; a task is in progress while a task in its `depends` is not done; the tracker and `plan.csv` disagree (only with an external tracker); every number in the report cites a run-id that is a chosen result in `decisions-log.md` (research projects).

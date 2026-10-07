@@ -15,7 +15,7 @@ var PLAN=bash .agents/tools/plan.sh
 var ROLE_NAME=Duc42195
 var ROLE=maintainer
 var ROLE_OWNS=everything
-var AGENTS=claude
+var AGENTS=claude,opencode
 var PLAN_CHECK=no
 file	539756227d2387811748e8e0e8d4574d9134d9bdbce2447b1ccd0a408e39558f	AGENTS.md
 file	87931c1d2accf7c7419d624922296b45bf288a698736ee8194fefd3591106385	.agents/roles.md
@@ -28,3 +28,4 @@ file	a89e2b4bbd78e202d00132d0cc13373825a98f8aa0e3a3285ae3e164e52a15a9	.agents/wi
 file	5368f4ef477d4724ec03ae3c364ec2809eeb240f3ee0858cebc48d1426e1d5b7	.agents/wiki/working-process.md
 file	b83ec15cdc95ba3a5a4d5b695631d227d61b5d05de1e31e4e6c1f417dfefafc5	.claude/commands/done.md
 file	336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49	CLAUDE.md
+file	ea1f40fac08a831e2c52ca82287ff6dbf1883f9c799e8cf5d02124bb15d527d4	.opencode/commands/done.md

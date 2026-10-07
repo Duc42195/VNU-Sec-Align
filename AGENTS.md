@@ -19,6 +19,10 @@ The single rulebook for every person and every AI tool in this repo. Other AI co
 | Full decision history (Context/Decision/Rejected alternatives/Consequences, #1–#35+) | `.agents/record.md` — the project's real decision log; append-only, same discipline as `.agents/wiki/decisions-log.md` below but pre-dates this scaffold. Keep using `record.md` as primary; `decisions-log.md` is available for any decision outside its scope. |
 | Machine-logged action history | `.agents/action-history.md` |
 | Lessons, gotchas, open questions (new, scaffold-provided) | `.agents/wiki/` |
+| What the project is and how the data is laid out | `README.md` |
+| The research proposal being written up (v1 → v2) | `proposal.md` |
+| Runbooks / current-task notes (not governance) | `to-do.md`, `manual-t9b.md`, `notebooks/T10_MANUAL.md`, `tools/pod_setup/manual.md`, `docs/reports-on-t9b.md` |
+| New attack-vector specs | `data/research_notes/attack_vector_09_10_addendum.md` (legacy dataset docs in `archive/legacy_data/*.md`; scratch notes like `paper/manuscript/note 19-mar.md` are not sources of truth) |
 | Who is who | `.agents/roles.md` |
 
 ## Working rules

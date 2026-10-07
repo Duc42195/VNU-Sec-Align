@@ -36,3 +36,9 @@ Format:
 - Root cause: torchtune 0.6.0 import cứng `from torchao.dtypes.nf4tensor import linear_nf4, to_nf4` (`torchtune/modules/low_precision/nf4tensor.py:15`) và `NF4Tensor` (`common_utils.py:19`), nhưng `pyproject.toml` **không pin torchao** — chỉ check "có torchao không". torchao đã xoá module đó ở v0.18 (đã dò: v0.11–v0.13 và v0.15–v0.17 còn, v0.14 không tồn tại, v0.18 không còn).
 - Fix: dùng đúng bộ Meta đã pin — `torch==2.8.0` + `torchao==0.11.0` + `torchtune==0.6.0` (`external/meta_secalign/requirements.txt:230,232`). Cài torchao mới không cứu được; phải khớp cả torch vì torchao đóng gói theo version torch.
 - Lesson: thư viện không pin dependency không phải lỗi của ta — nhưng đừng kết luận "torchtune không làm được 4-bit". Nó làm được, chỉ là cần bộ version đúng. Và khi một thư viện con báo ImportError ở local nhưng treo ở nơi khác, đó là **hai version khác nhau** — đừng gộp thành một kết luận.
+
+## 2026-10-07 — `device_map='auto'` của accelerate tự offload sang CPU → base 8B bf16 vẫn load được trên T4 15GB
+- Symptom: dự đoán cell 1b (load base bf16 ~16GB trên T4 14.5GB) chắc chắn OOM; thực tế load xong và generate được, chỉ chậm.
+- Root cause: `from_pretrained(..., device_map='auto')` với `max_memory` mặc định không giới hạn → accelerate chỉ đưa phần vừa lên GPU, phần dư offload sang CPU (`WARNING:accelerate.big_modeling:Some parameters are on the meta device because they were offloaded to the cpu`). Không có OOM vì tổng < RAM (~30GB) của Colab.
+- Fix: không cần làm gì. Chỉ cần bắt `torch.cuda.OutOfMemoryError` quanh lời gọi thay vì khẳng định trước là sẽ OOM.
+- Lesson: đừng viết "chắc chắn OOM" vào notebook/hardcode trạng thái GPU — cứ chạy thử trong `try/except`, rồi mô tả đúng việc đã xảy ra. Lỗi tương tự: `quantize_base=True` của torchtune bị tôi kết luận treo vì một lần chạy trên T4; nó có thể chỉ là offload chậm.
